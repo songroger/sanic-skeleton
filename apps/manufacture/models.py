@@ -23,6 +23,14 @@ class Supplier(AbstractBaseModel):
     def __str__(self):
         return self.short_name
 
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'company_code': self.company_code,
+            'company_name': self.company_name,
+            'short_name': self.short_name
+        }
+
     class Meta:
         table = "company_base_info"
 
