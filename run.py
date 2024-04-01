@@ -43,7 +43,7 @@ app.static('/favicon.ico', './static/favicon.ico', name='fav')
 register_tortoise(
     app,
     db_url=f"asyncpg://{environ.get('DB_USER')}:{environ.get('DB_PWD')}@{environ.get('DB_HOST')}:{environ.get('DB_PORT')}/{environ.get('DB_NAME')}",
-    modules={"models": ["apps.auth"]},
+    modules={"models": ["apps.auth", "apps.manufacture"]},
     generate_schemas=True
 )
 

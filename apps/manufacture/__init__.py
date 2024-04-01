@@ -1,1 +1,1 @@
-from .models import Supplier
+from .models import *
