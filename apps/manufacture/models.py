@@ -24,12 +24,42 @@ class Supplier(AbstractBaseModel):
         return self.short_name
 
     def to_dict(self):
-        return {
-            'id': self.id,
-            'company_code': self.company_code,
-            'company_name': self.company_name,
-            'short_name': self.short_name
-        }
+        return dict(self)
+
+    async def create_or_update(self, args):
+        if args.get("id"):
+            supplier = await Supplier.filter(id=args.get("id")).update(
+                company_code=args.get("company_code"),
+                company_name=args.get("company_name"),
+                short_name=args.get("short_name"),
+                country=args.get("country"),
+                province=args.get("province"),
+                city=args.get("city"),
+                address=args.get("address"),
+                legal_person=args.get("legal_person"),
+                contract_person=args.get("contract_person"),
+                contract_phone=args.get("contract_phone")
+                )
+        else:
+            supplier = await Supplier.create(
+                company_code=args.get("company_code"),
+                company_name=args.get("company_name"),
+                short_name=args.get("short_name"),
+                country=args.get("country"),
+                province=args.get("province"),
+                city=args.get("city"),
+                address=args.get("address"),
+                legal_person=args.get("legal_person"),
+                contract_person=args.get("contract_person"),
+                contract_phone=args.get("contract_phone")
+            )
+
+        return supplier
+
+    async def disable_or_not(self, args):
+        if args.get("id"):
+            supplier = await Supplier.filter(id=args.get("id")).update(is_forbidden=args.get("is_forbidden"))
+        return
 
     class Meta:
         table = "company_base_info"
@@ -56,6 +86,48 @@ class Material(AbstractBaseModel):
     def __str__(self):
         return self.part_num
 
+    def to_dict(self):
+        return dict(self)
+
+    async def create_or_update(self, args):
+        if args.get("id"):
+            mate = await Material.filter(id=args.get("id")).update(
+                part_num=args.get("part_num"),
+                mate_model=args.get("mate_model"),
+                mate_desc=args.get("mate_desc"),
+                spec_size=args.get("spec_size"),
+                spec_weight=args.get("spec_weight"),
+                spec_min_qty=args.get("spec_min_qty"),
+                spec_max_qty=args.get("spec_max_qty"),
+                mate_type=args.get("mate_type"),
+                purchase_type=args.get("purchase_type"),
+                purchase_cycle=args.get("purchase_cycle"),
+                safety_stock=args.get("safety_stock"),
+                safety_lower=args.get("safety_lower")
+                )
+        else:
+            mate = await Material.create(
+                part_num=args.get("part_num"),
+                mate_model=args.get("mate_model"),
+                mate_desc=args.get("mate_desc"),
+                spec_size=args.get("spec_size"),
+                spec_weight=args.get("spec_weight"),
+                spec_min_qty=args.get("spec_min_qty"),
+                spec_max_qty=args.get("spec_max_qty"),
+                mate_type=args.get("mate_type"),
+                purchase_type=args.get("purchase_type"),
+                purchase_cycle=args.get("purchase_cycle"),
+                safety_stock=args.get("safety_stock"),
+                safety_lower=args.get("safety_lower")
+            )
+
+        return mate
+
+    async def disable_or_not(self, args):
+        if args.get("id"):
+            supplier = await Material.filter(id=args.get("id")).update(is_forbidden=args.get("is_forbidden"))
+        return
+
     class Meta:
         table = "material_base_info"
 
@@ -72,6 +144,9 @@ class BOM(AbstractBaseModel):
 
     def __str__(self):
         return self.part_num
+
+    def to_dict(self):
+        return dict(self)
 
     class Meta:
         table = "bom_info_primary"
@@ -93,6 +168,9 @@ class BOMDetail(AbstractBaseModel):
 
     def __str__(self):
         return self.part_num
+
+    def to_dict(self):
+        return dict(self)
 
     class Meta:
         table = "bom_info_detail"
