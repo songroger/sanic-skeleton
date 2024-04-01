@@ -1,5 +1,6 @@
 import time
 import datetime
+from sanic import response
 
 
 def baseResponse(status_code: int, msg: str, data: dict) -> dict:
@@ -15,7 +16,7 @@ def baseResponse(status_code: int, msg: str, data: dict) -> dict:
         "msg": msg,
         "data": data
     }
-    return response_dict
+    return response.json(response_dict)
 
 
 def utc_time_conversion(date_time):

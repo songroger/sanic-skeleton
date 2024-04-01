@@ -6,3 +6,13 @@
     /_/      \__,_/ \___/ \__/ \____//_/    _\__, /      \__/ \___//____/ \__/  
                                             /____/                              
 
+
+## Aerich
+
+ 1. aerich init-db [No need to repeat]
+
+ At this point, we have created migration for our app and we can see the migration file in the directory
+
+ 2. aerich migrate --name add_xxx
+ 3. aerich upgrade
+ 

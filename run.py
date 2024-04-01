@@ -12,6 +12,8 @@ from settings import settings
 from core.extentions.exceptions import handle_404
 from core.extentions.middlewares import check_content_negotiation, jsonapi_standard_response_header
 from apps import app, auth_instance
+# from sanic_restful_api import Resource, Api
+from apps.manufacture.views import TodoSimple
 
 
 app.config.update_config(settings)
@@ -20,19 +22,23 @@ auth_instance.setup(app)
 
 # Install Apps
 app.blueprint(auth_bp)
+app.add_route(TodoSimple.as_view(), '/api/todo')
 
 # Regist middleware & handler
 app.register_middleware(check_content_negotiation, "request")
 app.register_middleware(jsonapi_standard_response_header, "response")
 # app.error_handler.add(Exception, handle_404)
 
-# 模板文件路由
+# Static dir
 app.static('/', './static/index.html', name='index')
 app.static('/static', './static/static', name='pc_static')
 app.static('/h5', './static/h5/index.html', name='h5')
 app.static('/h5/static', './static/h5/static', name='static')
 app.static('/favicon.ico', './static/favicon.ico', name='fav')
 
+# restful_api init
+# api = Api(app)
+# api.add_resource(TodoSimple, '/api/todo')
 
 register_tortoise(
     app,
