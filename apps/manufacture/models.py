@@ -37,7 +37,7 @@ class Supplier(AbstractBaseModel):
 
     async def disable_or_not(self, args):
         if args.get("id"):
-            supplier = await Supplier.filter(id=args.get("id")).update(is_forbidden=args.get("is_forbidden"))
+            _ = await Supplier.filter(id=args.get("id")).update(is_forbidden=args.get("is_forbidden"))
         return
 
     class Meta:
@@ -79,7 +79,7 @@ class Material(AbstractBaseModel):
 
     async def disable_or_not(self, args):
         if args.get("id"):
-            supplier = await Material.filter(id=args.get("id")).update(is_forbidden=args.get("is_forbidden"))
+            _ = await Material.filter(id=args.get("id")).update(is_forbidden=args.get("is_forbidden"))
         return
 
     class Meta:

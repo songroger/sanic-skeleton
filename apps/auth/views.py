@@ -19,7 +19,7 @@ async def test(request):
     logger.info("test")
     redis_conn.setex("test_key", 5, 'value')
 
-    return sanicjson(baseResponse(200, "success", {}))
+    return baseResponse(200, "success", {})
 
 
 @auth_bp.route('/login', methods=['GET', 'POST'])

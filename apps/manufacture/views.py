@@ -1,7 +1,7 @@
 from sanic.views import HTTPMethodView
 # from sanic.response import json as sanicjson
 from core.base import baseResponse
-from .models import Supplier, Material, BOM, BOMDetail
+from .models import Supplier, Material, BOM, BOMDetail, PoList, PoDetail, Order, OrderDetail
 
 
 class TodoSimple(HTTPMethodView):
@@ -22,7 +22,7 @@ class SupplierManager(HTTPMethodView):
         page = int(request.args.get('page', 1))
         per_page = int(request.args.get('per_page', 10))
 
-        supplier = await Supplier.all().offset((page - 1) * per_page).limit(per_page)
+        supplier = await Supplier.all().order_by('-id').offset((page - 1) * per_page).limit(per_page)
         total = await Supplier.all().count()
 
         data = {
@@ -37,14 +37,14 @@ class SupplierManager(HTTPMethodView):
     async def post(self, request):
         args = request.json
 
-        supplier = await Supplier().create_or_update(args)
+        _ = await Supplier().create_or_update(args)
 
         return baseResponse(200, "success", {})
 
     async def delete(self, request):
         args = request.json
 
-        supplier = await Supplier().disable_or_not(args)
+        _ = await Supplier().disable_or_not(args)
 
         return baseResponse(200, "success", {})
 
@@ -54,7 +54,7 @@ class MaterialManager(HTTPMethodView):
         page = int(request.args.get('page', 1))
         per_page = int(request.args.get('per_page', 10))
 
-        mate = await Material.all().offset((page - 1) * per_page).limit(per_page)
+        mate = await Material.all().order_by('-id').offset((page - 1) * per_page).limit(per_page)
         total = await Material.all().count()
 
         data = {
@@ -69,14 +69,14 @@ class MaterialManager(HTTPMethodView):
     async def post(self, request):
         args = request.json
 
-        supplier = await Material().create_or_update(args)
+        _ = await Material().create_or_update(args)
 
         return baseResponse(200, "success", {})
 
     async def delete(self, request):
         args = request.json
 
-        supplier = await Material().disable_or_not(args)
+        _ = await Material().disable_or_not(args)
 
         return baseResponse(200, "success", {})
 
@@ -86,7 +86,7 @@ class BOMManager(HTTPMethodView):
         page = int(request.args.get('page', 1))
         per_page = int(request.args.get('per_page', 10))
 
-        bom = await BOM.all().offset((page - 1) * per_page).limit(per_page)
+        bom = await BOM.all().order_by('-id').offset((page - 1) * per_page).limit(per_page)
         total = await BOM.all().count()
 
         data = {

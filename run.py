@@ -13,7 +13,8 @@ from core.extentions.exceptions import handle_404
 from core.extentions.middlewares import check_content_negotiation, jsonapi_standard_response_header
 from apps import app, auth_instance
 # from sanic_restful_api import Resource, Api
-from apps.manufacture.views import TodoSimple, SupplierManager, MaterialManager, BOMManager, BOMDetailView
+from apps.manufacture.views import (TodoSimple, SupplierManager, MaterialManager, BOMManager, BOMDetailView,
+    PoListView, PODetailView, OrderView, OrderDetailView)
 
 
 app.config.update_config(settings)
@@ -27,6 +28,10 @@ app.add_route(SupplierManager.as_view(), '/api/supplier')
 app.add_route(MaterialManager.as_view(), '/api/material')
 app.add_route(BOMManager.as_view(), '/api/bom_list')
 app.add_route(BOMDetailView.as_view(), '/api/bom_detail')
+app.add_route(PoListView.as_view(), '/api/po_list')
+app.add_route(PODetailView.as_view(), '/api/po_detail')
+app.add_route(OrderView.as_view(), '/api/order')
+app.add_route(OrderDetailView.as_view(), '/api/order_detail')
 
 # Regist middleware & handler
 app.register_middleware(check_content_negotiation, "request")
