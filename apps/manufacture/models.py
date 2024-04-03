@@ -9,7 +9,7 @@ class Supplier(AbstractBaseModel):
     company_code = fields.CharField(32, description="公司代码")
     company_name = fields.CharField(128, description="公司名称")
     short_name = fields.CharField(32, description="简称")
-    aera = fields.TextField(description="国家/地区")
+    area = fields.TextField(description="国家/地区")
     address = fields.TextField()
     is_forbidden = fields.IntField(default=0)
     legal_person = fields.CharField(128, description="法人")
@@ -237,8 +237,6 @@ class DeliveryOrder(AbstractBaseModel, TimestampMixin, UserMixin):
     driver_name = fields.CharField(32, description='司机')
     car_number = fields.CharField(32, description='车牌')
     tel = fields.CharField(32)
-    create_time = fields.DatetimeField(null=True)
-    create_user = fields.CharField(32)
 
     def __str__(self):
         return self.delivery_order_code

@@ -4,7 +4,7 @@ from enum import Enum
 from sanic import response
 
 
-def baseResponse(status_code: int, msg: str, data: dict) -> dict:
+def baseResponse(status_code: int, msg: str, data: dict = {}) -> dict:
     """
     generate the base response
     :param status_code: http status code
