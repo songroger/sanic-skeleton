@@ -1,10 +1,7 @@
 #!/usr/bin/python3
 # encoding: utf-8
 import argparse
-from sanic import Sanic
-from os import environ
 
-# from core import serverdb
 from core.logger import logger
 from apps.auth.views import auth_bp
 from tortoise.contrib.sanic import register_tortoise
@@ -51,7 +48,7 @@ app.static('/favicon.ico', './static/favicon.ico', name='fav')
 
 register_tortoise(
     app,
-    db_url=f"asyncpg://{environ.get('DB_USER')}:{environ.get('DB_PWD')}@{environ.get('DB_HOST')}:{environ.get('DB_PORT')}/{environ.get('DB_NAME')}",
+    db_url=f"asyncpg://{settings.Data.get('DB_USER')}:{settings.Data.get('DB_PWD')}@{settings.Data.get('DB_HOST')}:{settings.Data.get('DB_PORT')}/{settings.Data.get('DB_NAME')}",
     modules={"models": ["apps.auth", "apps.manufacture"]},
     generate_schemas=True
 )
@@ -64,7 +61,7 @@ parser.add_argument(
 parser.add_argument(
     '--port', help='Setup port to attach, default to 8093', default=8093)
 parser.add_argument(
-    '--workers', help='Setup workers to run, default to 1', type=int, default=2)
+    '--workers', help='Setup workers to run, default to 1', type=int, default=1)
 parser.add_argument('--debug', help='Enable or disable debugging',
                     default=True, action='store_true')
 parser.add_argument('--accesslog', help='Enable or disable access log',

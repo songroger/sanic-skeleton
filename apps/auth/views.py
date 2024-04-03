@@ -3,7 +3,7 @@ from sanic.response import json as sanicjson
 from tortoise.functions import Count
 
 from core.logger import logger
-from core import redis_conn
+from core.utils_init import redis_conn
 from core.base import baseResponse
 from .models import FactoryUser
 from apps import auth_instance as auth
