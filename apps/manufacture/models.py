@@ -85,7 +85,7 @@ class Material(AbstractBaseModel):
         table = "material_base_info"
 
 
-class BOM(AbstractBaseModel):
+class BOM(AbstractBaseModel, TimestampMixin, UserMixin):
     """
     BOM:料号+版本保持唯一
     """
@@ -129,7 +129,7 @@ class BOMDetail(AbstractBaseModel):
         table = "bom_info_detail"
 
 
-class PoList(AbstractBaseModel):
+class PoList(AbstractBaseModel, TimestampMixin, UserMixin):
     """
     采购单
     """
@@ -175,7 +175,7 @@ class PoDetail(AbstractBaseModel):
         table = "po_info_detail"
 
 
-class Order(AbstractBaseModel):
+class Order(AbstractBaseModel, TimestampMixin, UserMixin):
     """
     销售单
     """
@@ -227,7 +227,7 @@ class OrderDetail(AbstractBaseModel):
         table = "sales_order_detail"
 
 
-class DeliveryOrder(AbstractBaseModel):
+class DeliveryOrder(AbstractBaseModel, TimestampMixin, UserMixin):
     """
     出货单
     """
