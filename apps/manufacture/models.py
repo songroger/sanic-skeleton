@@ -28,31 +28,10 @@ class Supplier(AbstractBaseModel):
 
     async def create_or_update(self, args):
         if args.get("id"):
-            supplier = await Supplier.filter(id=args.get("id")).update(
-                company_code=args.get("company_code"),
-                company_name=args.get("company_name"),
-                short_name=args.get("short_name"),
-                country=args.get("country"),
-                province=args.get("province"),
-                city=args.get("city"),
-                address=args.get("address"),
-                legal_person=args.get("legal_person"),
-                contract_person=args.get("contract_person"),
-                contract_phone=args.get("contract_phone")
-                )
+            sid = args.pop("id")
+            supplier = await Supplier.filter(id=sid).update(**args)
         else:
-            supplier = await Supplier.create(
-                company_code=args.get("company_code"),
-                company_name=args.get("company_name"),
-                short_name=args.get("short_name"),
-                country=args.get("country"),
-                province=args.get("province"),
-                city=args.get("city"),
-                address=args.get("address"),
-                legal_person=args.get("legal_person"),
-                contract_person=args.get("contract_person"),
-                contract_phone=args.get("contract_phone")
-            )
+            supplier = await Supplier.create(**args)
 
         return supplier
 
@@ -91,35 +70,10 @@ class Material(AbstractBaseModel):
 
     async def create_or_update(self, args):
         if args.get("id"):
-            mate = await Material.filter(id=args.get("id")).update(
-                part_num=args.get("part_num"),
-                mate_model=args.get("mate_model"),
-                mate_desc=args.get("mate_desc"),
-                spec_size=args.get("spec_size"),
-                spec_weight=args.get("spec_weight"),
-                spec_min_qty=args.get("spec_min_qty"),
-                spec_max_qty=args.get("spec_max_qty"),
-                mate_type=args.get("mate_type"),
-                purchase_type=args.get("purchase_type"),
-                purchase_cycle=args.get("purchase_cycle"),
-                safety_stock=args.get("safety_stock"),
-                safety_lower=args.get("safety_lower")
-                )
+            mid = args.pop("id")
+            mate = await Material.filter(id=mid).update(**args)
         else:
-            mate = await Material.create(
-                part_num=args.get("part_num"),
-                mate_model=args.get("mate_model"),
-                mate_desc=args.get("mate_desc"),
-                spec_size=args.get("spec_size"),
-                spec_weight=args.get("spec_weight"),
-                spec_min_qty=args.get("spec_min_qty"),
-                spec_max_qty=args.get("spec_max_qty"),
-                mate_type=args.get("mate_type"),
-                purchase_type=args.get("purchase_type"),
-                purchase_cycle=args.get("purchase_cycle"),
-                safety_stock=args.get("safety_stock"),
-                safety_lower=args.get("safety_lower")
-            )
+            mate = await Material.create(**args)
 
         return mate
 
@@ -187,6 +141,16 @@ class PoList(AbstractBaseModel):
     def __str__(self):
         return self.po_code
 
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "po_code": self.po_code,
+            "supplier_code": self.supplier_code,
+            "supplier_name": self.supplier_name,
+            "delivery_time": self.delivery_time.strftime("%Y-%m-%d"),
+            "commit_time": self.commit_time.strftime("%Y-%m-%d")
+        }
+
     class Meta:
         table = "po_info_primary"
 
@@ -201,6 +165,9 @@ class PoDetail(AbstractBaseModel):
 
     def __str__(self):
         return self.part_num
+
+    def to_dict(self):
+        return dict(self)
 
     class Meta:
         table = "po_info_detail"
@@ -220,6 +187,16 @@ class Order(AbstractBaseModel):
     def __str__(self):
         return self.sales_order_code
 
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "sales_order_code": self.sales_order_code,
+            "contract_code": self.contract_code,
+            "customer_code": self.customer_code,
+            "delivery_time": self.delivery_time.strftime("%Y-%m-%d"),
+            "commit_time": self.commit_time.strftime("%Y-%m-%d")
+        }
+
     class Meta:
         table = "sales_order_primary"
 
@@ -235,7 +212,10 @@ class OrderDetail(AbstractBaseModel):
     remark = fields.CharField(64)
 
     def __str__(self):
-        return self.product_model
+        return self.order_id
+
+    def to_dict(self):
+        return dict(self)
 
     class Meta:
         table = "sales_order_detail"
