@@ -1,7 +1,7 @@
 from sanic.views import HTTPMethodView
 # from sanic.response import json as sanicjson
 from core.base import baseResponse
-from .models import Supplier, Material, BOM, BOMDetail
+from .models import Supplier, Material, BOM, BOMDetail, DeliveryOrder, DeliverayOrderDetail
 
 
 class TodoSimple(HTTPMethodView):
@@ -110,3 +110,47 @@ class BOMDetailView(HTTPMethodView):
         }
 
         return baseResponse(200, "success", data)
+
+
+class DeliverayManage(HTTPMethodView):
+    async def get(self, request):
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 10))
+
+        bills = await DeliveryOrder.all().offset((page - 1) * per_page).limit(per_page)
+        total = await DeliveryOrder.all().count()
+
+        data = {
+            'data': [b.to_dict() for b in bills],
+            'total': total,
+            'page': page,
+            'per_page': per_page
+        }
+
+        return baseResponse(200, "success", data)
+    
+    async def post(self, request):
+        payload = request.json
+        """
+        
+        """
+        
+
+
+class DeliverayDetailManage(HTTPMethodView):
+    async def get(self, request):
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 10))
+
+        bills = await DeliverayDetailManage.all().offset((page - 1) * per_page).limit(per_page)
+        total = await DeliverayDetailManage.all().count()
+
+        data = {
+            'data': [b.to_dict() for b in bills],
+            'total': total,
+            'page': page,
+            'per_page': per_page
+        }
+
+        return baseResponse(200, "success", data)
+        
