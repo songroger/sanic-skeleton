@@ -16,7 +16,7 @@ class Supplier(AbstractBaseModel):
     contract_person = fields.CharField(32, description="联系人")
     contract_phone = fields.CharField(32, description="联系电话")
     is_disable = fields.IntField(default=0)
-    is_supplier = fields.IntField(default=0, description='0供应商;1客户')
+    identity = fields.IntField(description='0供应商;1客户')
 
     def __str__(self):
         return self.short_name
