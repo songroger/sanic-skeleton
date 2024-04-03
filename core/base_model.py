@@ -14,5 +14,5 @@ class TimestampMixin():
 
 
 class UserMixin():
-    created_by = fields.CharField(32)
-    updated_by = fields.CharField(32)
+    created_by = fields.CharField(32, null=True)
+    updated_by = fields.CharField(32, null=True)
