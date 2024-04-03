@@ -1,5 +1,6 @@
 import time
 import datetime
+from enum import Enum
 from sanic import response
 
 
@@ -34,3 +35,18 @@ def utc_time_conversion(date_time):
     time_array = time.localtime(int(in_time))
     res_time = time.strftime("%Y-%m-%d %H:%M:%S", time_array)
     return res_time
+
+
+class SalesOrderState(Enum):
+    """
+    销售单状态
+    """
+    # 基础状态
+    CREATE = 0
+    OUTING = 1
+    FINISHED = 2
+
+    # 组合状态
+    ## 处理中的状态
+    Inprocess = [CREATE, OUTING]
+
