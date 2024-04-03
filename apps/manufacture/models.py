@@ -201,6 +201,7 @@ class Order(AbstractBaseModel):
     customer_name = fields.CharField(32, description='客户名称')
     finally_customer_code = fields.CharField(32)
     finally_customer_name = fields.CharField(32)
+    state = fields.SmallIntField(default=0, description='状态:0新建,1出货进行中,2完结')
     delivery_time = fields.DatetimeField(null=True, description='交货时间')
     commit_time = fields.DatetimeField(null=True, description='提交时间')
     is_disable = fields.IntField(default=0)
