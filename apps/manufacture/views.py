@@ -2,7 +2,7 @@ from sanic.views import HTTPMethodView
 # from sanic.response import json as sanicjson
 from core.base import baseResponse
 from .models import (Supplier, Material, BOM, BOMDetail, PoList, PoDetail, Order,
-    OrderDetail, DeliveryOrder, DeliverayOrderDetail
+    OrderDetail, DeliveryOrder, DeliverayOrderDetail)
 
 
 class TodoSimple(HTTPMethodView):
