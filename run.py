@@ -11,7 +11,7 @@ from core.extentions.middlewares import check_content_negotiation, jsonapi_stand
 from apps import app, auth_instance
 # from sanic_restful_api import Resource, Api
 from apps.manufacture.views import (TodoSimple, SupplierManager, MaterialManager, BOMManager, BOMDetailView,
-    PoListView, PODetailView, OrderView, OrderDetailView)
+    PoListView, PODetailView, OrderView, OrderDetailView, DeliverayManage, DeliverayDetailManage)
 
 
 app.config.update_config(settings)
@@ -29,6 +29,8 @@ app.add_route(PoListView.as_view(), '/api/po_list')
 app.add_route(PODetailView.as_view(), '/api/po_detail')
 app.add_route(OrderView.as_view(), '/api/order')
 app.add_route(OrderDetailView.as_view(), '/api/order_detail')
+app.add_route(DeliverayManage.as_view(), '/api/deliveray')
+app.add_route(DeliverayDetailManage.as_view(), '/api/deliveray_detail')
 
 # Regist middleware & handler
 app.register_middleware(check_content_negotiation, "request")
@@ -59,7 +61,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     '--host', help='Setup host ip to listen up, default to 0.0.0.0', default='0.0.0.0')
 parser.add_argument(
-    '--port', help='Setup port to attach, default to 8093', default=8093)
+    '--port', help='Setup port to attach, default to 8093', type=int, default=8093)
 parser.add_argument(
     '--workers', help='Setup workers to run, default to 1', type=int, default=1)
 parser.add_argument('--debug', help='Enable or disable debugging',

@@ -208,7 +208,7 @@ class Order(AbstractBaseModel, TimestampMixin, UserMixin):
 
 
 class OrderDetail(AbstractBaseModel):
-    primary_inner_id = fields.IntField()
+    primary_inner = fields.ForeignKeyField('models.Order', 'details')
     serial_num = fields.CharField(32)
     part_num = fields.CharField(32)
     mate_model = fields.CharField(32)
@@ -241,12 +241,25 @@ class DeliveryOrder(AbstractBaseModel, TimestampMixin, UserMixin):
     def __str__(self):
         return self.delivery_order_code
 
+    def to_dict(self):
+        return dict(self)
+
+    async def create_or_update(self, args):
+        if args.get("id"):
+            sid = args.pop("id")
+            order = await DeliveryOrder.filter(id=sid).update(**args)
+
+        else:
+            order = await DeliveryOrder.create(**args)
+
+        return order
+    
     class Meta:
         table = "delivery_order_primary"
 
 
 class DeliverayOrderDetail(AbstractBaseModel):
-    primary_inner_id = fields.IntField()
+    primary_inner = fields.ForeignKeyField('models.DeliveryOrder', 'details')
     shelf_sn = fields.CharField(32)
     part_num = fields.CharField(32)
     mate_model = fields.CharField(32)
