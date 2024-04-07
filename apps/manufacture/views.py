@@ -4,6 +4,7 @@ from apps.manufacture.utils import DeliveryOrderOperation, SalesOrderOperation, 
 from core.base import ResponseCode, SalesOrderState, baseResponse
 from .models import (Supplier, Material, BOM, BOMDetail, PoList, PoDetail, Order,
     OrderDetail, DeliveryOrder, DeliverayOrderDetail)
+from tortoise import Tortoise
 
 
 class TodoSimple(HTTPMethodView):
@@ -15,6 +16,9 @@ class TodoSimple(HTTPMethodView):
         args = request.json
 
         todo_id = args.get("task")
+        conn = Tortoise.get_connection("default")
+
+        val = await conn.execute_query_dict("SELECT * FROM company_base_info")
 
         return baseResponse(ResponseCode.OK, "success", {"task": todo_id})
 
@@ -148,7 +152,7 @@ class PODetailView(HTTPMethodView):
     async def get(self, request):
         po_id = int(request.args.get('po_id'))
 
-        detail = await PoDetail.filter(po_list_id=po_id).order_by('-id')
+        detail = await PoDetail.filter(primary_inner_id=po_id).order_by('-id')
 
         data = {
             'detail': [d.to_dict() for d in detail]
@@ -178,7 +182,7 @@ class OrderView(HTTPMethodView):
                                    ).all().count()
 
         data = {
-            'po': [o.to_dict() for o in order],
+            'order': [o.to_dict() for o in order],
             'total': total,
             'page': page,
             'per_page': per_page
@@ -222,7 +226,7 @@ class OrderDetailView(HTTPMethodView):
     async def get(self, request):
         order_id = request.args.get('order_id')
 
-        detail = await OrderDetail.filter(order_id=order_id).order_by('-id')
+        detail = await OrderDetail.filter(primary_inner_id=order_id).order_by('-id')
 
         data = {
             'detail': [d.to_dict() for d in detail]
