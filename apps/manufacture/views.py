@@ -27,9 +27,12 @@ class SupplierManager(HTTPMethodView):
     async def get(self, request):
         page = int(request.args.get('page', 1))
         per_page = int(request.args.get('per_page', 10))
+        company_name = request.args.get('company_name', "")
 
-        supplier = await Supplier.all().order_by('-id').offset((page - 1) * per_page).limit(per_page)
-        total = await Supplier.all().count()
+        supplier = await Supplier.filter(company_name__contains=company_name
+                                        ).all().order_by('-id').offset((page - 1) * per_page).limit(per_page)
+        total = await Supplier.filter(company_name__contains=company_name
+                                      ).all().count()
 
         data = {
             'supplier': [s.to_dict() for s in supplier],
