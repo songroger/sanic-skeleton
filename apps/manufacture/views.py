@@ -1,6 +1,7 @@
 from sanic.views import HTTPMethodView
 # from sanic.response import json as sanicjson
-from core.base import baseResponse
+from apps.manufacture.utils import DeliveryOrderOperation, SalesOrderOperation, checkDiffSalesAndDelivery
+from core.base import ResponseCode, SalesOrderState, baseResponse
 from .models import (Supplier, Material, BOM, BOMDetail, PoList, PoDetail, Order,
     OrderDetail, DeliveryOrder, DeliverayOrderDetail)
 from tortoise import Tortoise
@@ -9,7 +10,7 @@ from tortoise import Tortoise
 class TodoSimple(HTTPMethodView):
     async def get(self, request, todo_id):
         data = {"todo": "todo_id"}
-        return baseResponse(200, "success", data)
+        return baseResponse(ResponseCode.OK, "success", data)
 
     async def post(self, request):
         args = request.json
@@ -19,7 +20,7 @@ class TodoSimple(HTTPMethodView):
 
         val = await conn.execute_query_dict("SELECT * FROM company_base_info")
 
-        return baseResponse(200, "success", {"task": todo_id})
+        return baseResponse(ResponseCode.OK, "success", {"task": todo_id})
 
 
 class SupplierManager(HTTPMethodView):
@@ -37,21 +38,21 @@ class SupplierManager(HTTPMethodView):
             'per_page': per_page
         }
 
-        return baseResponse(200, "success", data)
+        return baseResponse(ResponseCode.OK, "success", data)
 
     async def post(self, request):
         args = request.json
 
         _ = await Supplier().create_or_update(args)
 
-        return baseResponse(200, "success", {})
+        return baseResponse(ResponseCode.OK, "success", {})
 
     async def delete(self, request):
         args = request.json
 
         _ = await Supplier().disable_or_not(args)
 
-        return baseResponse(200, "success", {})
+        return baseResponse(ResponseCode.OK, "success", {})
 
 
 class MaterialManager(HTTPMethodView):
@@ -69,21 +70,21 @@ class MaterialManager(HTTPMethodView):
             'per_page': per_page
         }
 
-        return baseResponse(200, "success", data)
+        return baseResponse(ResponseCode.OK, "success", data)
 
     async def post(self, request):
         args = request.json
 
         _ = await Material().create_or_update(args)
 
-        return baseResponse(200, "success", {})
+        return baseResponse(ResponseCode.OK, "success", {})
 
     async def delete(self, request):
         args = request.json
 
         _ = await Material().disable_or_not(args)
 
-        return baseResponse(200, "success", {})
+        return baseResponse(ResponseCode.OK, "success", {})
 
 
 class BOMManager(HTTPMethodView):
@@ -101,7 +102,7 @@ class BOMManager(HTTPMethodView):
             'per_page': per_page
         }
 
-        return baseResponse(200, "success", data)
+        return baseResponse(ResponseCode.OK, "success", data)
 
 
 class BOMDetailView(HTTPMethodView):
@@ -114,7 +115,7 @@ class BOMDetailView(HTTPMethodView):
             'detail': [d.to_dict() for d in detail]
         }
 
-        return baseResponse(200, "success", data)
+        return baseResponse(ResponseCode.OK, "success", data)
 
 
 class PoListView(HTTPMethodView):
@@ -144,7 +145,7 @@ class PoListView(HTTPMethodView):
             'per_page': per_page
         }
 
-        return baseResponse(200, "success", data)
+        return baseResponse(ResponseCode.OK, "success", data)
 
 
 class PODetailView(HTTPMethodView):
@@ -157,7 +158,7 @@ class PODetailView(HTTPMethodView):
             'detail': [d.to_dict() for d in detail]
         }
 
-        return baseResponse(200, "success", data)
+        return baseResponse(ResponseCode.OK, "success", data)
 
 
 class OrderView(HTTPMethodView):
@@ -187,7 +188,39 @@ class OrderView(HTTPMethodView):
             'per_page': per_page
         }
 
-        return baseResponse(200, "success", data)
+        return baseResponse(ResponseCode.OK, "success", data)
+
+    async def post(self, request):
+        payload = request.json
+        
+        sales_order_code = payload.get("sales_order_code")
+        contract_code = payload.get("contract_code")
+        customer_code = payload.get("customer_code")
+        customer_name = payload.get("customer_name")
+        finally_customer_code = payload.get("finally_customer_code")
+        finally_customer_name = payload.get("finally_customer_name")
+        delivery_time = payload.get("delivery_time")
+        commit_time = payload.get("commit_time")
+        content = payload.get("content")
+        
+        order = Order(sales_order_code=sales_order_code, contract_code=contract_code, customer_code=customer_code, 
+                      customer_name=customer_name, finally_customer_code=finally_customer_code, 
+                      finally_customer_name=finally_customer_name, delivery_time=delivery_time, commit_time=commit_time)
+        await order.save()
+        data = []
+        serial_num = 1
+        for item in content:
+            _pn = item.get("part_num")
+            _model = item.get("mate_model")
+            _desc = item.get("mate_desc")
+            _qty = item.get("qty")
+            _unit_name = item.get("unit_name")
+            _remark = item.get("remark")
+            data.append(OrderDetail(serial_num=serial_num, part_num=_pn, mate_model=_model, mate_desc=_desc, qty=_qty, primary_inner=order, unit_name=_unit_name, remark=_remark))
+            serial_num += 1
+        
+        await OrderDetail.bulk_create(data)
+        return baseResponse(ResponseCode.OK, msg="ok")
 
 
 class OrderDetailView(HTTPMethodView):
@@ -200,32 +233,54 @@ class OrderDetailView(HTTPMethodView):
             'detail': [d.to_dict() for d in detail]
         }
 
-        return baseResponse(200, "success", data)
+        return baseResponse(ResponseCode.OK, "success", data)
 
 
 class DeliverayManage(HTTPMethodView):
     async def get(self, request):
-        page = int(request.args.get('page', 1))
-        per_page = int(request.args.get('per_page', 10))
+        # page = int(request.args.get('page', 1))
+        # per_page = int(request.args.get('per_page', 10))
 
-        bills = await DeliveryOrder.all().offset((page - 1) * per_page).limit(per_page)
-        total = await DeliveryOrder.all().count()
+        # bills = await DeliveryOrder.all().offset((page - 1) * per_page).limit(per_page)
+        # total = await DeliveryOrder.all().count()
 
-        data = {
-            'data': [b.to_dict() for b in bills],
-            'total': total,
-            'page': page,
-            'per_page': per_page
-        }
+        # data = {
+        #     'data': [b.to_dict() for b in bills],
+        #     'total': total,
+        #     'page': page,
+        #     'per_page': per_page
+        # }
+        # data = await DeliveryOrderOperation.getOrderInfo("S001-1")
+        
+        data = await DeliveryOrder.filter(delivery_order_code="S001-1").prefetch_related("details").first()
+        if data:
+            for item2 in data.details:
+                print(item2, type(item2))
 
-        return baseResponse(200, "success", data)
+        return baseResponse(ResponseCode.OK, "success")
+    
     
     async def post(self, request):
+        """
+        新建出货单据
+        """
         payload = request.json
-        """
+        # TODO 出货单号后续自动生成
+        delivery_order_code = payload.get("delivery_order_code")
+        sales_order_code = payload.get("sales_order_code")
+        content = payload.get("content")
+
+        # 出货单号自动生成
         
-        """
-        
+        # 校验出货单内容与订单需求
+        check_flag, check_msg = await checkDiffSalesAndDelivery(sales_order_code=sales_order_code, delivery_detail=content)
+        if check_flag is False:
+            return baseResponse(ResponseCode.FAIL, msg=check_msg)
+
+        # 创建出货单数据
+        await DeliveryOrderOperation.createInfo(payload=payload)
+
+        return baseResponse(ResponseCode.OK, msg="ok")
 
 
 class DeliverayDetailManage(HTTPMethodView):
@@ -243,5 +298,5 @@ class DeliverayDetailManage(HTTPMethodView):
             'per_page': per_page
         }
 
-        return baseResponse(200, "success", data)
+        return baseResponse(ResponseCode.OK, "success", data)
         
