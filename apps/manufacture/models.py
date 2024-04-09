@@ -169,7 +169,14 @@ class PoDetail(AbstractBaseModel):
         return self.part_num
 
     def to_dict(self):
-        return dict(self)
+        return {
+            "id": self.id,
+            "primary_inner_id": self.primary_inner_id,
+            "part_num": self.part_num,
+            "unit_price": float(self.unit_price),
+            "qty": self.qty,
+            "total_price": float(self.total_price)
+        }
 
     class Meta:
         table = "po_info_detail"
