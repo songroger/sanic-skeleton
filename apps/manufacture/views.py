@@ -3,7 +3,7 @@ from sanic.views import HTTPMethodView
 from apps.manufacture.utils import DeliveryOrderOperation, SalesOrderOperation, checkDiffSalesAndDelivery
 from core.base import ResponseCode, SalesOrderStateEnum, baseResponse
 from .models import (Supplier, Material, BOM, BOMDetail, PoList, PoDetail, Order,
-    OrderDetail, DeliveryOrder, DeliverayOrderDetail)
+    OrderDetail, DeliveryOrder, DeliveryOrderDetail)
 from tortoise import Tortoise
 
 
@@ -261,12 +261,11 @@ class DeliverayManage(HTTPMethodView):
         新建出货单据
         """
         payload = request.json
-        # TODO 出货单号后续自动生成
-        delivery_order_code = payload.get("delivery_order_code")
         sales_order_code = payload.get("sales_order_code")
         content = payload.get("content")
 
         # 出货单号自动生成
+        delivery_order_code = await DeliveryOrderOperation.generateDeliveryOrderCode(sales_order_code=sales_order_code)
         
         # 校验出货单内容与订单需求
         check_flag, check_msg = await checkDiffSalesAndDelivery(sales_order_code=sales_order_code, delivery_detail=content)
@@ -274,6 +273,7 @@ class DeliverayManage(HTTPMethodView):
             return baseResponse(ResponseCode.FAIL, msg=check_msg)
 
         # 创建出货单数据
+        payload.update(delivery_order_code=delivery_order_code)
         await DeliveryOrderOperation.createInfo(payload=payload)
 
         return baseResponse(ResponseCode.OK, msg="ok")

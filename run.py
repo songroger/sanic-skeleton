@@ -7,6 +7,7 @@ from apps.auth.views import auth_bp
 from apps.manufacture.business_views import business_bp 
 from apps.database.views import database_bp 
 from tortoise.contrib.sanic import register_tortoise
+from core.base import ServerErrorHandler
 from settings import settings
 from core.extentions.exceptions import handle_404
 from core.extentions.middlewares import check_content_negotiation, jsonapi_standard_response_header
@@ -21,6 +22,7 @@ from apps.manufacture.open_api import CustomerCodeList, OrderCode
 app.config.update_config(settings)
 auth_instance.setup(app)
 
+app.error_handler = ServerErrorHandler()
 
 # Install Apps
 app.blueprint(auth_bp)

@@ -221,7 +221,8 @@ class OrderDetail(AbstractBaseModel):
     part_num = fields.CharField(32)
     mate_model = fields.CharField(32)
     mate_desc = fields.CharField(128)
-    qty = fields.IntField()
+    qty = fields.IntField(description='需求数量')
+    out_qty = fields.IntField(default=0, description='出货数量')
     unit_name = fields.CharField(16, description='单位')
     remark = fields.TextField(description="备注")
 
@@ -284,7 +285,7 @@ class DeliveryOrder(AbstractBaseModel, TimestampMixin, UserMixin):
         table = "delivery_order_primary"
 
 
-class DeliverayOrderDetail(AbstractBaseModel):
+class DeliveryOrderDetail(AbstractBaseModel):
     primary_inner = fields.ForeignKeyField('models.DeliveryOrder', 'details')
     shelf_sn = fields.CharField(32)
     part_num = fields.CharField(32)
@@ -294,6 +295,9 @@ class DeliverayOrderDetail(AbstractBaseModel):
 
     def __str__(self):
         return self.part_num
+    
+    def to_dict(self):
+        return dict(self)
 
     class Meta:
         table = "delivery_order_detail"
