@@ -1,11 +1,36 @@
 from .models import DeliverayOrderDetail, DeliveryOrder, Supplier, Order, OrderDetail
-from core.base import SalesOrderState
+from core.base import SalesOrderStateEnum
 import xlrd
+from .models import Material
+from typing import List, Optional
 from .models import Material
 
 
 def function():
     pass
+
+
+class MaterialOperation:
+
+    @classmethod
+    async def getPartNumInfos(cls, part_num_list: Optional[List[str]] = None, mate_type: str = "", purchase_type: str = ""):
+        """
+        获取料号信息
+        :params part_num_list: 料号列表
+        :params mate_type: 物料类型
+        :params purchase_type: 采购类型
+        """
+        query = Material
+        if part_num_list:
+            query = query.filter(part_num__in=part_num_list)
+        if mate_type:
+            query = query.filter(mate_type=mate_type)
+        if purchase_type:
+            query = query.filter(purchase_type=purchase_type)
+        result = await query.all()
+
+        return result
+
 
 class SalesOrderOperation:
     """
@@ -18,21 +43,26 @@ class SalesOrderOperation:
         :return bool
         """
         order_info = cls.getOrderInfo(sales_order_code=sales_order_code)
-        if order_info.state == SalesOrderState.FINISHED.value:
+        if order_info.state == SalesOrderStateEnum.FINISHED.value:
             return True
         return False
 
     @classmethod
-    async def getOrderInfo(cls, sales_order_code, is_need_detail=False):
+    async def getOrderInfo(cls, sales_order_code: str = "", is_need_detail=False, sales_state: list = None):
         """
         获取订单信息(外键关联,获取主表信息及内容详情)
         :params sales_order_code: 订单号
         :params is_need_detail: boll 是否需要详情
         """
-        order_info = await Order.filter(sales_order_code=sales_order_code)
+        order_info_sql = Order.all()
+        if sales_order_code:
+            order_info_sql = order_info_sql.filter(sales_order_code__contains=sales_order_code)
+        if sales_state:
+            order_info_sql = order_info_sql.filter(state__in=sales_state)
         if is_need_detail is True:
-            order_info = order_info.prefetch_related("details")
-        order_info = order_info.first()
+            order_info_sql = order_info_sql.prefetch_related("details")
+        order_info = await order_info_sql
+    
         return order_info
 
     @classmethod
@@ -41,7 +71,7 @@ class SalesOrderOperation:
         通过客户查询销售订单
         :params custom_code:客户代码(代理商) 
         """
-        order_list = await Order.filter(customer_code=customer_code, state=SalesOrderState.Inprocess.value).order_by("-created_time")
+        order_list = await Order.filter(customer_code=customer_code, state=SalesOrderStateEnum.Inprocess.value).order_by("-created_time")
         print(order_list)
         # TODO 通过客户查询订单:待实现
 

@@ -4,6 +4,8 @@ import argparse
 
 from core.logger import logger
 from apps.auth.views import auth_bp
+from apps.manufacture.business_views import business_bp 
+from apps.database.views import database_bp 
 from tortoise.contrib.sanic import register_tortoise
 from settings import settings
 from core.extentions.exceptions import handle_404
@@ -20,6 +22,8 @@ auth_instance.setup(app)
 
 # Install Apps
 app.blueprint(auth_bp)
+app.blueprint(business_bp)
+app.blueprint(database_bp)
 app.add_route(TodoSimple.as_view(), '/api/todo')
 app.add_route(SupplierManager.as_view(), '/api/supplier')
 app.add_route(MaterialManager.as_view(), '/api/material')

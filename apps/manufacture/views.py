@@ -1,7 +1,7 @@
 from sanic.views import HTTPMethodView
 # from sanic.response import json as sanicjson
 from apps.manufacture.utils import DeliveryOrderOperation, SalesOrderOperation, checkDiffSalesAndDelivery
-from core.base import ResponseCode, SalesOrderState, baseResponse
+from core.base import ResponseCode, SalesOrderStateEnum, baseResponse
 from .models import (Supplier, Material, BOM, BOMDetail, PoList, PoDetail, Order,
     OrderDetail, DeliveryOrder, DeliverayOrderDetail)
 from tortoise import Tortoise
@@ -237,26 +237,19 @@ class OrderDetailView(HTTPMethodView):
 
 class DeliverayManage(HTTPMethodView):
     async def get(self, request):
-        # page = int(request.args.get('page', 1))
-        # per_page = int(request.args.get('per_page', 10))
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 10))
 
-        # bills = await DeliveryOrder.all().offset((page - 1) * per_page).limit(per_page)
-        # total = await DeliveryOrder.all().count()
+        bills = await DeliveryOrder.all().offset((page - 1) * per_page).limit(per_page)
+        total = await DeliveryOrder.all().count()
 
-        # data = {
-        #     'data': [b.to_dict() for b in bills],
-        #     'total': total,
-        #     'page': page,
-        #     'per_page': per_page
-        # }
-        # data = await DeliveryOrderOperation.getOrderInfo("S001-1")
-        
-        data = await DeliveryOrder.filter(delivery_order_code="S001-1").prefetch_related("details").first()
-        if data:
-            for item2 in data.details:
-                print(item2, type(item2))
-
-        return baseResponse(ResponseCode.OK, "success")
+        data = {
+            'data': [b.to_dict() for b in bills],
+            'total': total,
+            'page': page,
+            'per_page': per_page
+        }
+        return baseResponse(ResponseCode.OK, "success", data=data)
     
     
     async def post(self, request):
@@ -299,3 +292,6 @@ class DeliverayDetailManage(HTTPMethodView):
 
         return baseResponse(ResponseCode.OK, "success", data)
         
+
+
+

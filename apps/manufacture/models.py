@@ -6,7 +6,7 @@ class Supplier(AbstractBaseModel):
     """
     供应商管理
     """
-    company_code = fields.CharField(32, description="公司代码")
+    company_code = fields.CharField(32, description="公司代码", unique=True)
     company_name = fields.CharField(128, description="公司名称")
     short_name = fields.CharField(32, description="简称")
     area = fields.TextField(description="国家/地区")
@@ -47,7 +47,7 @@ class Material(AbstractBaseModel):
     """
     物料主数据
     """
-    part_num = fields.CharField(32)
+    part_num = fields.CharField(32, unique=True)
     mate_model = fields.CharField(32, description="物料型号")
     mate_desc = fields.CharField(64, description="物料描述")
     spec_size = fields.CharField(64, description="规格尺寸")
@@ -197,6 +197,7 @@ class Order(AbstractBaseModel, TimestampMixin, UserMixin):
         return {
             "id": self.id,
             "sales_order_code": self.sales_order_code,
+            "state": self.state,
             "contract_code": self.contract_code,
             "customer_code": self.customer_code,
             "delivery_time": self.delivery_time.strftime("%Y-%m-%d"),
@@ -221,7 +222,16 @@ class OrderDetail(AbstractBaseModel):
         return self.primary_inner_id
 
     def to_dict(self):
-        return dict(self)
+        return {
+            "id": self.id,
+            "serial_num": self.serial_num,
+            "part_num": self.part_num,
+            "mate_model": self.mate_model,
+            "mate_desc": self.mate_desc,
+            "qty": self.qty,
+            "unit_name": self.unit_name,
+            "remark": self.remark
+        }
 
     class Meta:
         table = "sales_order_detail"
@@ -242,7 +252,16 @@ class DeliveryOrder(AbstractBaseModel, TimestampMixin, UserMixin):
         return self.delivery_order_code
 
     def to_dict(self):
-        return dict(self)
+        return {
+            "id": self.id,
+            "delivery_order_code": self.delivery_order_code,
+            "sales_order_code": self.sales_order_code,
+            "driver_name": self.driver_name,
+            "car_number": self.car_number,
+            "tel": self.tel,
+            "create_time": self.created_time.strftime("%Y-%m-%d %X"),
+            "create_by": self.created_by
+        }
 
     async def create_or_update(self, args):
         if args.get("id"):

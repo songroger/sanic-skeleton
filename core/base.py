@@ -2,6 +2,7 @@ import time
 import datetime
 from enum import Enum
 from sanic import response
+from typing import Union
 
 
 class ResponseCode:
@@ -12,7 +13,7 @@ class ResponseCode:
     FAIL = 201
 
 
-def baseResponse(status_code: ResponseCode, msg: str, data: dict = {}) -> dict:
+def baseResponse(status_code: ResponseCode, msg: str, data: Union[dict, list] = {}) -> dict:
     """
     generate the base response
     :param status_code: http status code
@@ -45,7 +46,7 @@ def utc_time_conversion(date_time):
     return res_time
 
 
-class SalesOrderState(Enum):
+class SalesOrderStateEnum(Enum):
     """
     销售单状态
     """
@@ -57,4 +58,21 @@ class SalesOrderState(Enum):
     # 组合状态
     ## 处理中的状态
     Inprocess = [CREATE, OUTING]
+
+
+class MateTypeEnum(Enum):
+    """
+    物料类型
+    """
+    FINISHED_PRODUCT = "成品"
+    SEMI_PRODUCT = "半成品"
+    RAW_MATERIAL = "原材料"
+
+
+class PurchaseTypeEnum(Enum):
+    """
+    采购类型
+    """
+    PURCHASE = "采购"
+    PRODUCT = "生产"
 
