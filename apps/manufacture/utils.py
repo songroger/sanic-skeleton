@@ -242,7 +242,7 @@ async def parse_bom_data(upload_file):
             row_data = sheet_table.row_values(i)
             # print(row_data)
             if row_data[0]:
-                po = await BOM.create(part_num=row_data[1],
+                bo = await BOM.create(part_num=row_data[1],
                                       product_version=row_data[2],
                                       mate_model=row_data[3],
                                       mate_desc=row_data[4],
@@ -250,7 +250,7 @@ async def parse_bom_data(upload_file):
                                      )
 
             elif row_data[1] != "物料编码":
-                detail = await BOMDetail.create(primary_inner_id=po.id,
+                detail = await BOMDetail.create(primary_inner_id=bo.id,
                                                 serial_num=0,
                                                 part_num=row_data[1],
                                                 mate_model=row_data[2],
@@ -307,7 +307,7 @@ async def parse_order_data(upload_file):
             row_data = sheet_table.row_values(i)
             # print(row_data)
             if row_data[0]:
-                po = await Order.create(sales_order_code=row_data[1],
+                od = await Order.create(sales_order_code=row_data[1],
                                         contract_code=row_data[2],
                                         customer_code=row_data[3],
                                         customer_name=row_data[4],
@@ -318,7 +318,7 @@ async def parse_order_data(upload_file):
                                         )
 
             elif row_data[1] != "料号":
-                detail = await OrderDetail.create(primary_inner=po,
+                detail = await OrderDetail.create(primary_inner=od,
                                                    serial_num=0,
                                                    part_num=row_data[1],
                                                    mate_model=row_data[2],
