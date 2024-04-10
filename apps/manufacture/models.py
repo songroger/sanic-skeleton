@@ -99,7 +99,14 @@ class BOM(AbstractBaseModel, TimestampMixin, UserMixin):
         return self.part_num
 
     def to_dict(self):
-        return dict(self)
+        return {
+            "id": self.id,
+            "part_num": self.part_num,
+            "product_version": self.product_version,
+            "mate_model": self.mate_model,
+            "mate_desc": self.mate_desc,
+            "mate_type": self.mate_type
+        }
 
     class Meta:
         table = "bom_info_primary"
