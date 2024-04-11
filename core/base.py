@@ -3,6 +3,22 @@ import datetime
 from enum import Enum
 from sanic import response
 from typing import Union
+from .logger import logger
+import traceback
+from sanic.handlers import ErrorHandler
+
+
+# 全局异常处理
+class ServerErrorHandler(ErrorHandler):
+    def response(self, request, exception):
+        try:
+            exception_type = exception.args[0]
+            exc_traceback = traceback.extract_tb(exception.__traceback__)
+            logger.error(f"some error cache:{exc_traceback}", exc_info=True)
+            return baseResponse(ResponseCode.FAIL, msg=exception_type)
+        except Exception as e:
+            logger.error("Sever Error Handler Error", exc_info=True)
+        return super().response(request, exception)
 
 
 class ResponseCode:
@@ -51,9 +67,10 @@ class SalesOrderStateEnum(Enum):
     销售单状态
     """
     # 基础状态
-    CREATE = 0
-    OUTING = 1
-    FINISHED = 2
+
+    CREATE = 0    # 新建
+    OUTING = 1    # 出货中
+    FINISHED = 2  # 出货完成
 
     # 组合状态
     ## 处理中的状态

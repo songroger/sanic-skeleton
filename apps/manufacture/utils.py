@@ -1,8 +1,10 @@
 import xlrd
+import datetime
 from core.logger import logger
+from tortoise.transactions import atomic, in_transaction
 from core.base import SalesOrderStateEnum
 from typing import List, Optional
-from .models import (Material, DeliverayOrderDetail, DeliveryOrder, Supplier, Order, OrderDetail,
+from .models import (Material, DeliveryOrderDetail, DeliveryOrder, Supplier, Order, OrderDetail,
                      PoList, PoDetail, BOM, BOMDetail)
 
 
@@ -62,16 +64,6 @@ class SalesOrderOperation:
         return order_info
 
     @classmethod
-    async def getSalesOrderByCustomer(cls, customer_code):
-        """
-        通过客户查询销售订单
-        :params custom_code:客户代码(代理商) 
-        """
-        order_list = await Order.filter(customer_code=customer_code, state=SalesOrderStateEnum.Inprocess.value).order_by("-created_time")
-        print(order_list)
-        # TODO 通过客户查询订单:待实现
-
-    @classmethod
     async def getLatestSurplusDemandForSalesOrder(cls, sales_order_code):
         """
         获取订单的最新剩余需求
@@ -86,32 +78,91 @@ class SalesOrderOperation:
         # 按料号统计需求
         sales_map = {}
         for item in sales_info.details:
+            qty = item.qty
+            out_qty = item.out_qty
+            if out_qty >= qty:
+                continue
             if item.part_num in sales_map:
-                sales_map[item.part_num] += item.qty
+                sales_map[item.part_num] += (qty - out_qty)
             else:
-                sales_map[item.part_num] = item.qty
+                sales_map[item.part_num] = (qty - out_qty)
 
-        # 2. 获取订单累计出货数量
-        history_map = await DeliveryOrderOperation.getDeliveryHistoryData(sales_order_code=sales_order_code)
-        
-        # 3. 计算出最新剩余需求量
-        if history_map:
-            sales_map_copy = sales_map.copy()
-            for pn, qty in sales_map_copy.items():
-                # 料号可能没有出库数据,设置默认值0
-                if pn in history_map:
-                    if qty <= history_map[pn]:
-                        del sales_map[pn]
-                    else:
-                        sales_map[pn] = qty - history_map[pn]
         # 返回订单有需求的料号
         return sales_map
+
+    @classmethod
+    async def updateSalesOrderStateByDelivery(cls, sales_order_code):
+        """
+        更新销售订单状态,实时对比出货进度,刷新订单状态
+        :params sales_order_code: 销售订单号
+        """
+        # 查询订单对应的出货数据
+        deliverys = await DeliveryOrder.filter(sales_order_code=sales_order_code).prefetch_related("details").all()
+        if not deliverys:
+            return
+        delivery_map = {}
+        # 按料号统计历史出货数据
+        for item in deliverys:
+            for item2 in item.details:
+                pn = item2.part_num
+                qty = item2.qty
+                if pn in delivery_map:
+                    delivery_map[pn] += qty
+                else:
+                    delivery_map[pn] = qty
+
+        # 获取订单数据
+        sales = await Order.filter(sales_order_code=sales_order_code).prefetch_related("details").first()
+        row_state_list = []
+        row_update = []
+        for item in sales.details:
+            pn = item.part_num
+            qty = item.qty
+            row_state = 0
+            # 如果订单料号没有出货记录,则当前料号状态=0
+            if pn in delivery_map:
+                if delivery_map[pn] < qty:
+                    row_state = 1
+                else:
+                    row_state = 2
+                item.out_qty = delivery_map[pn]
+                row_update.append(item)
+            row_state_list.append(row_state)
+        
+        # 存在需要更新的需求行,将出货数量进行更新
+        if row_update:
+            await OrderDetail.bulk_update(row_update, fields=['out_qty'])
+
+        if sum(row_state_list) == 0:
+            state = SalesOrderStateEnum.CREATE.value
+        elif sum(row_state_list) == len(row_state_list) * 2:
+            state = SalesOrderStateEnum.FINISHED.value
+        else:
+            state = SalesOrderStateEnum.OUTING.value
+        sales.state = state
+        # 对比订单及出货单进度,判断最终状态
+        await sales.save()
+
 
 
 class DeliveryOrderOperation:
     """
     出货单操作
     """
+
+    @classmethod
+    async def generateDeliveryOrderCode(cls, sales_order_code):
+        """
+        生成出货单号
+        :params sales_order_code:销售订单号
+        """
+        info = await Order.filter(sales_order_code=sales_order_code).first()
+        customer_code = info.customer_code
+        today = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+        # D+客户代码+时间
+        code = f"D{customer_code}{today}"
+        return code
+
     @classmethod
     async def createInfo(cls, payload):
         """
@@ -128,44 +179,51 @@ class DeliveryOrderOperation:
         delivery = DeliveryOrder(delivery_order_code=delivery_order_code, customer_name=customer_name, 
                                        sales_order_code=sales_order_code, driver_name=driver_name, car_number=car_number, 
                                        tel=tel)
-        await delivery.save()
-        data = []
-        for item in content:
-            _sn = item.get("shelf_sn")
-            _pn = item.get("part_num")
-            _model = item.get("mate_model")
-            _desc = item.get("mate_desc")
-            _qty = item.get("qty")
-            data.append(DeliverayOrderDetail(shelf_sn=_sn, part_num=_pn, mate_model=_model, mate_desc=_desc, qty=_qty, primary_inner=delivery))
         
-        await DeliverayOrderDetail.bulk_create(data)
-        # TODO 更新销售单状态
+        # 事务操作
+        async with in_transaction():
+            # 出货单主表添加
+            await delivery.save()
+
+            data = []
+            for item in content:
+                _sn = item.get("shelf_sn")
+                _pn = item.get("part_num")
+                _model = item.get("mate_model")
+                _desc = item.get("mate_desc")
+                _qty = item.get("qty")
+                data.append(DeliveryOrderDetail(shelf_sn=_sn, part_num=_pn, mate_model=_model, mate_desc=_desc, qty=_qty, primary_inner=delivery))
+            # 出货单详情添加
+            await DeliveryOrderDetail.bulk_create(data)
+            # 更新销售单状态
+            await SalesOrderOperation.updateSalesOrderStateByDelivery(sales_order_code=sales_order_code)
 
 
     @classmethod
     async def getDeliveryHistoryData(cls, delivery_order_code: str = "", sales_order_code: str = ""):
         """
         统计出货单发料数据
-        :parmas delivery_order_code: 出货单号
-        :parmas sales_order_code: 销售订单号
+        :params delivery_order_code: 出货单号
+        :params sales_order_code: 销售订单号
         :returns dict
         """
-        query = DeliveryOrder.filter()
+        query = DeliveryOrder
 
         if delivery_order_code:
             query = query.filter(delivery_order_code=delivery_order_code)
 
         if sales_order_code:
             query = query.filter(sales_order_code=sales_order_code)
-        data = await query.prefetch_related("details").first()
+        data = await query.prefetch_related("details").all()
         history_cache = {}
         if not data:
             return history_cache
-        for item in data.details:
-            if item.part_num in history_cache:
-                history_cache[item.part_num] += item.qty
-            else:
-                history_cache[item.part_num] = item.qty
+        for item in data:
+            for item2 in item.details:
+                if item2.part_num in history_cache:
+                    history_cache[item2.part_num] += item2.qty
+                else:
+                    history_cache[item2.part_num] = item2.qty
         return history_cache
         
 
@@ -276,6 +334,11 @@ async def parse_po_data(upload_file):
             row_data = sheet_table.row_values(i)
             # print(row_data)
             if row_data[0]:
+                _exist_supplier_code = await Supplier.filter(company_code=row_data[2]).exists()
+                _is_forbidden = await Supplier.filter(company_code=row_data[2], is_forbidden=1).exists()
+                if not _exist_supplier_code or _is_forbidden:
+                    return False, f"供应商代码:{row_data[2]} 不存在或者该供应商已被禁用"
+
                 po = await PoList.create(po_code=row_data[1],
                                          supplier_code=row_data[2],
                                          supplier_name=row_data[3],
@@ -291,10 +354,10 @@ async def parse_po_data(upload_file):
                                                qty=row_data[3],
                                                total_price=row_data[4]
                                                )
-        return True
+        return True, ""
     except Exception as e:
         logger.info(e)
-        return False
+        return False, str(e)
 
 
 async def parse_order_data(upload_file):
@@ -307,6 +370,11 @@ async def parse_order_data(upload_file):
             row_data = sheet_table.row_values(i)
             # print(row_data)
             if row_data[0]:
+                _exist_supplier_code = await Supplier.filter(company_code=row_data[3]).exists()
+                _is_forbidden = await Supplier.filter(company_code=row_data[3], is_forbidden=1).exists()
+                if not _exist_supplier_code or _is_forbidden:
+                    return False, f"供应商代码:{row_data[2]} 不存在或者该供应商已被禁用"
+
                 od = await Order.create(sales_order_code=row_data[1],
                                         contract_code=row_data[2],
                                         customer_code=row_data[3],
@@ -327,7 +395,7 @@ async def parse_order_data(upload_file):
                                                    unit_name=row_data[5],
                                                    remark=row_data[6]
                                                    )
-        return True
+        return True, ""
     except Exception as e:
         logger.info(e)
-        return False
+        return False, str(e)

@@ -3,8 +3,10 @@ from sanic.views import HTTPMethodView
 from apps.manufacture.utils import DeliveryOrderOperation, SalesOrderOperation, checkDiffSalesAndDelivery
 from core.base import ResponseCode, SalesOrderStateEnum, baseResponse
 from .models import (Supplier, Material, BOM, BOMDetail, PoList, PoDetail, Order,
-    OrderDetail, DeliveryOrder, DeliverayOrderDetail)
+    OrderDetail, DeliveryOrder, DeliveryOrderDetail)
 from tortoise import Tortoise
+from tortoise.expressions import Q
+from datetime import datetime, timedelta
 
 
 class TodoSimple(HTTPMethodView):
@@ -128,17 +130,17 @@ class PoListView(HTTPMethodView):
         supplier_name = request.args.get('supplier_name', "")
         po_code = request.args.get('po_code', "")
         start_datetime = request.args.get('start', "2024-01-01")
-        end_datetime = request.args.get('end', "2050-12-01")
+        end_datetime = datetime.strptime(request.args.get('end', "2050-12-01"), "%Y-%m-%d") + timedelta(days=1)
 
         po = await PoList.filter(supplier_name__contains=supplier_name,
                                  po_code__contains=po_code,
                                  commit_time__gte=start_datetime,
-                                 commit_time__lt=end_datetime
+                                 commit_time__lte=end_datetime.strftime("%Y-%m-%d")
                                  ).all().order_by('-id').offset((page - 1) * per_page).limit(per_page)
         total = await PoList.filter(supplier_name__contains=supplier_name,
                                     po_code__contains=po_code,
                                     commit_time__gte=start_datetime,
-                                    commit_time__lt=end_datetime
+                                    commit_time__lte=end_datetime.strftime("%Y-%m-%d")
                                     ).all().count()
 
         data = {
@@ -171,17 +173,17 @@ class OrderView(HTTPMethodView):
         finally_customer_name = request.args.get('supplier_name', "")
         sales_order_code = request.args.get('sales_order_code', "")
         start_datetime = request.args.get('start', "2024-01-01")
-        end_datetime = request.args.get('end', "2050-12-01")
+        end_datetime = datetime.strptime(request.args.get('end', "2050-12-01"), "%Y-%m-%d") + timedelta(days=1)
 
         order = await Order.filter(finally_customer_name__contains=finally_customer_name,
                                    sales_order_code__contains=sales_order_code,
                                    delivery_time__gte=start_datetime,
-                                   delivery_time__lt=end_datetime
+                                   delivery_time__lte=end_datetime.strftime("%Y-%m-%d")
                                    ).all().order_by('-id').offset((page - 1) * per_page).limit(per_page)
         total = await Order.filter(finally_customer_name__contains=finally_customer_name,
                                    sales_order_code__contains=sales_order_code,
                                    delivery_time__gte=start_datetime,
-                                   delivery_time__lt=end_datetime
+                                   delivery_time__lte=end_datetime.strftime("%Y-%m-%d")
                                    ).all().count()
 
         data = {
@@ -261,12 +263,11 @@ class DeliverayManage(HTTPMethodView):
         新建出货单据
         """
         payload = request.json
-        # TODO 出货单号后续自动生成
-        delivery_order_code = payload.get("delivery_order_code")
         sales_order_code = payload.get("sales_order_code")
         content = payload.get("content")
 
         # 出货单号自动生成
+        delivery_order_code = await DeliveryOrderOperation.generateDeliveryOrderCode(sales_order_code=sales_order_code)
         
         # 校验出货单内容与订单需求
         check_flag, check_msg = await checkDiffSalesAndDelivery(sales_order_code=sales_order_code, delivery_detail=content)
@@ -274,6 +275,7 @@ class DeliverayManage(HTTPMethodView):
             return baseResponse(ResponseCode.FAIL, msg=check_msg)
 
         # 创建出货单数据
+        payload.update(delivery_order_code=delivery_order_code)
         await DeliveryOrderOperation.createInfo(payload=payload)
 
         return baseResponse(ResponseCode.OK, msg="ok")
