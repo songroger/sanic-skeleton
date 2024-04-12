@@ -296,38 +296,43 @@ async def parse_bom_data(upload_file):
     total_rows = sheet_table.nrows
 
     try:
-        for i in range(1, total_rows):
-            row_data = sheet_table.row_values(i)
-            # print(row_data)
-            if row_data[0]:
-                _exist = await Material.filter(part_num=row_data[1]).exists()
-                _is_forbidden = await Material.filter(part_num=row_data[1], is_forbidden=1).exists()
-                if not _exist or _is_forbidden:
-                    return False, f"料号{row_data[1]}不存在或已被禁用"
+        async with in_transaction() as connection:
+            for i in range(1, total_rows):
+                row_data = sheet_table.row_values(i)
+                # print(row_data)
+                if row_data[0]:
+                    _exist = await Material.filter(part_num=row_data[1]).exists()
+                    _is_forbidden = await Material.filter(part_num=row_data[1], is_forbidden=1).exists()
+                    if not _exist or _is_forbidden:
+                        return False, f"料号{row_data[1]}不存在或已被禁用"
 
-                bo = await BOM.create(part_num=row_data[1],
-                                      product_version=row_data[2],
-                                      mate_model=row_data[3],
-                                      mate_desc=row_data[4],
-                                      mate_type=row_data[5]
-                                     )
+                    _bom_exists = await BOM.filter(part_num=row_data[1], product_version=row_data[2]).exists()
+                    if _bom_exists:
+                        return False, f"BOM：{row_data[1]}已存在"
 
-            elif row_data[1] != "物料编码":
-                _mate_exist = await Material.filter(part_num=row_data[1]).exists()
-                _is_forbidden = await Material.filter(part_num=row_data[1], is_forbidden=1).exists()
-                if not _mate_exist or _is_forbidden:
-                    return False, f"料号{row_data[1]}不存在或已被禁用"
+                    bo = await BOM.create(part_num=row_data[1],
+                                          product_version=row_data[2],
+                                          mate_model=row_data[3],
+                                          mate_desc=row_data[4],
+                                          mate_type=row_data[5]
+                                         )
 
-                detail = await BOMDetail.create(primary_inner_id=bo.id,
-                                                serial_num=0,
-                                                part_num=row_data[1],
-                                                mate_model=row_data[2],
-                                                mate_desc=row_data[3],
-                                                mate_type=row_data[4],
-                                                unit_num=row_data[5],
-                                                unit_name=row_data[6],
-                                                tier_flag=row_data[7]
-                                               )
+                elif row_data[1] != "物料编码":
+                    _mate_exist = await Material.filter(part_num=row_data[1]).exists()
+                    _is_forbidden = await Material.filter(part_num=row_data[1], is_forbidden=1).exists()
+                    if not _mate_exist or _is_forbidden:
+                        return False, f"料号{row_data[1]}不存在或已被禁用"
+
+                    detail = await BOMDetail.create(primary_inner_id=bo.id,
+                                                    serial_num=0,
+                                                    part_num=row_data[1],
+                                                    mate_model=row_data[2],
+                                                    mate_desc=row_data[3],
+                                                    mate_type=row_data[4],
+                                                    unit_num=row_data[5],
+                                                    unit_name=row_data[6],
+                                                    tier_flag=row_data[7]
+                                                   )
         return True, ""
     except Exception as e:
         logger.info(e)
@@ -340,30 +345,36 @@ async def parse_po_data(upload_file):
     total_rows = sheet_table.nrows
 
     try:
-        for i in range(1, total_rows):
-            row_data = sheet_table.row_values(i)
-            # print(row_data)
-            if row_data[0]:
-                _exist_supplier_code = await Supplier.filter(company_code=row_data[2]).exists()
-                _is_forbidden = await Supplier.filter(company_code=row_data[2], is_forbidden=1).exists()
-                if not _exist_supplier_code or _is_forbidden:
-                    return False, f"供应商代码:{row_data[2]} 不存在或者该供应商已被禁用"
+        async with in_transaction() as connection:
+            for i in range(1, total_rows):
+                row_data = sheet_table.row_values(i)
+                # print(row_data)
+                if row_data[0]:
+                    _exist_supplier_code = await Supplier.filter(company_code=row_data[2]).exists()
+                    _is_forbidden = await Supplier.filter(company_code=row_data[2], is_forbidden=1).exists()
+                    if not _exist_supplier_code or _is_forbidden:
+                        return False, f"供应商代码:{row_data[2]} 不存在或者该供应商已被禁用"
 
-                po = await PoList.create(po_code=row_data[1],
-                                         supplier_code=row_data[2],
-                                         supplier_name=row_data[3],
-                                         delivery_time=row_data[4],
-                                         commit_time=row_data[5]
-                                         )
+                    po = await PoList.create(po_code=row_data[1],
+                                             supplier_code=row_data[2],
+                                             supplier_name=row_data[3],
+                                             delivery_time=row_data[4],
+                                             commit_time=row_data[5]
+                                             )
 
-            elif row_data[1] != "物料编码":
-                detail = await PoDetail.create(primary_inner_id=po.id,
-                                               serial_num=0,
-                                               part_num=row_data[1],
-                                               unit_price=row_data[2],
-                                               qty=row_data[3],
-                                               total_price=row_data[4]
-                                               )
+                elif row_data[1] != "物料编码":
+                    _mate_exist = await Material.filter(part_num=row_data[1]).exists()
+                    _is_forbidden = await Material.filter(part_num=row_data[1], is_forbidden=1).exists()
+                    if not _mate_exist or _is_forbidden:
+                        return False, f"料号{row_data[1]}不存在或已被禁用"
+
+                    detail = await PoDetail.create(primary_inner_id=po.id,
+                                                   serial_num=0,
+                                                   part_num=row_data[1],
+                                                   unit_price=row_data[2],
+                                                   qty=row_data[3],
+                                                   total_price=row_data[4]
+                                                   )
         return True, ""
     except Exception as e:
         logger.info(e)
@@ -376,35 +387,41 @@ async def parse_order_data(upload_file):
     total_rows = sheet_table.nrows
 
     try:
-        for i in range(1, total_rows):
-            row_data = sheet_table.row_values(i)
-            # print(row_data)
-            if row_data[0]:
-                _exist_supplier_code = await Supplier.filter(company_code=row_data[3]).exists()
-                _is_forbidden = await Supplier.filter(company_code=row_data[3], is_forbidden=1).exists()
-                if not _exist_supplier_code or _is_forbidden:
-                    return False, f"供应商代码:{row_data[2]} 不存在或者该供应商已被禁用"
+        async with in_transaction() as connection:
+            for i in range(1, total_rows):
+                row_data = sheet_table.row_values(i)
+                # print(row_data)
+                if row_data[0]:
+                    _exist_supplier_code = await Supplier.filter(company_code=row_data[3]).exists()
+                    _is_forbidden = await Supplier.filter(company_code=row_data[3], is_forbidden=1).exists()
+                    if not _exist_supplier_code or _is_forbidden:
+                        return False, f"供应商代码:{row_data[3]} 不存在或者该供应商已被禁用"
 
-                od = await Order.create(sales_order_code=row_data[1],
-                                        contract_code=row_data[2],
-                                        customer_code=row_data[3],
-                                        customer_name=row_data[4],
-                                        finally_customer_code=row_data[5],
-                                        finally_customer_name=row_data[6],
-                                        delivery_time=row_data[7],
-                                        commit_time=row_data[8]
-                                        )
+                    od = await Order.create(sales_order_code=row_data[1],
+                                            contract_code=row_data[2],
+                                            customer_code=row_data[3],
+                                            customer_name=row_data[4],
+                                            finally_customer_code=row_data[5],
+                                            finally_customer_name=row_data[6],
+                                            delivery_time=row_data[7],
+                                            commit_time=row_data[8]
+                                            )
 
-            elif row_data[1] != "料号":
-                detail = await OrderDetail.create(primary_inner=od,
-                                                   serial_num=0,
-                                                   part_num=row_data[1],
-                                                   mate_model=row_data[2],
-                                                   mate_desc=row_data[3],
-                                                   qty=row_data[4],
-                                                   unit_name=row_data[5],
-                                                   remark=row_data[6]
-                                                   )
+                elif row_data[1] != "料号":
+                    _mate_exist = await Material.filter(part_num=row_data[1]).exists()
+                    _is_forbidden = await Material.filter(part_num=row_data[1], is_forbidden=1).exists()
+                    if not _mate_exist or _is_forbidden:
+                        return False, f"料号{row_data[1]}不存在或已被禁用"
+
+                    detail = await OrderDetail.create(primary_inner=od,
+                                                       serial_num=0,
+                                                       part_num=row_data[1],
+                                                       mate_model=row_data[2],
+                                                       mate_desc=row_data[3],
+                                                       qty=row_data[4],
+                                                       unit_name=row_data[5],
+                                                       remark=row_data[6]
+                                                       )
         return True, ""
     except Exception as e:
         logger.info(e)
