@@ -300,6 +300,11 @@ async def parse_bom_data(upload_file):
             row_data = sheet_table.row_values(i)
             # print(row_data)
             if row_data[0]:
+                _exist = await Material.filter(part_num=row_data[1]).exists()
+                _is_forbidden = await Material.filter(part_num=row_data[1], is_forbidden=1).exists()
+                if not _exist or _is_forbidden:
+                    return False, f"料号{row_data[1]}不存在或已被禁用"
+
                 bo = await BOM.create(part_num=row_data[1],
                                       product_version=row_data[2],
                                       mate_model=row_data[3],
@@ -308,6 +313,11 @@ async def parse_bom_data(upload_file):
                                      )
 
             elif row_data[1] != "物料编码":
+                _mate_exist = await Material.filter(part_num=row_data[1]).exists()
+                _is_forbidden = await Material.filter(part_num=row_data[1], is_forbidden=1).exists()
+                if not _mate_exist or _is_forbidden:
+                    return False, f"料号{row_data[1]}不存在或已被禁用"
+
                 detail = await BOMDetail.create(primary_inner_id=bo.id,
                                                 serial_num=0,
                                                 part_num=row_data[1],
@@ -318,10 +328,10 @@ async def parse_bom_data(upload_file):
                                                 unit_name=row_data[6],
                                                 tier_flag=row_data[7]
                                                )
-        return True
+        return True, ""
     except Exception as e:
         logger.info(e)
-        return False
+        return False, str(e)
 
 
 async def parse_po_data(upload_file):

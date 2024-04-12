@@ -48,6 +48,10 @@ class SupplierManager(HTTPMethodView):
     async def post(self, request):
         args = request.json
 
+        _exist = Supplier.filter(company_code=args.get("company_code"), identity=args.get("identity")).exists()
+        if _exist:
+            return baseResponse(ResponseCode.FAIL, "已存在", {})
+
         _ = await Supplier().create_or_update(args)
 
         return baseResponse(ResponseCode.OK, "success", {})
@@ -79,6 +83,10 @@ class MaterialManager(HTTPMethodView):
 
     async def post(self, request):
         args = request.json
+
+        _exist = Material.filter(part_num=args.get("part_num")).exists()
+        if _exist:
+            return baseResponse(ResponseCode.FAIL, "已存在", {})
 
         _ = await Material().create_or_update(args)
 

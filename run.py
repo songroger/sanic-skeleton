@@ -52,7 +52,7 @@ app.add_route(DeliverayDetailManage.as_view(), '/api/deliveray_detail')
 
 # Regist middleware & handler
 app.register_middleware(check_content_negotiation, "request")
-app.register_middleware(jsonapi_standard_response_header, "response")
+# app.register_middleware(jsonapi_standard_response_header, "response")
 # app.error_handler.add(Exception, handle_404)
 
 # Static dir
