@@ -1,12 +1,13 @@
 from tortoise import fields
 from core.base_model import AbstractBaseModel, TimestampMixin, UserMixin
+from tortoise.validators import MinLengthValidator
 
 
 class Supplier(AbstractBaseModel):
     """
     供应商管理
     """
-    company_code = fields.CharField(32, description="公司代码", unique=True)
+    company_code = fields.CharField(32, description="公司代码", unique=True, validators=[MinLengthValidator(3)])
     company_name = fields.CharField(128, description="公司名称")
     short_name = fields.CharField(32, description="简称")
     area = fields.TextField(description="国家/地区")
