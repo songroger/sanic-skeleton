@@ -2,7 +2,7 @@ import xlrd
 import datetime
 from core.logger import logger
 from tortoise.transactions import atomic, in_transaction
-from core.base import SalesOrderStateEnum
+from core.base import MateTypeEnum, PurchaseTypeEnum, SalesOrderStateEnum, SupplierIdentityEnum
 from .models import Material
 from typing import List, Optional
 from .models import (Material, DeliveryOrderDetail, DeliveryOrder, Supplier, Order, OrderDetail,
@@ -11,6 +11,41 @@ from .models import (Material, DeliveryOrderDetail, DeliveryOrder, Supplier, Ord
 
 def function():
     pass
+
+
+class ComponyOperation:
+    """
+    客户/供应商公司信息管理操作
+    """
+
+    @classmethod
+    async def getCustomerInfoByUnfinishSalesOrder(cls, sales_order_code: str = ""):
+        """
+        获取未完成订单的客户
+        """
+        # 查询未完成订单
+        orders = await SalesOrderOperation.getOrderInfo(sales_order_code=sales_order_code, sales_state=SalesOrderStateEnum.Inprocess.value)
+        customer_list = []
+        order_map = {}
+        for item in orders:
+            _code = item.customer_code
+            customer_list.append(_code)
+            if _code in order_map:
+                order_map[_code].append(item.to_dict())
+            else:
+                order_map[_code] = [item.to_dict()]
+
+        # 查询订单对应的客户
+        customers = await Supplier.all().filter(company_code__in=customer_list, identity=SupplierIdentityEnum.Customer.value)
+        result = []
+        for item in customers:
+            result.append({
+                "customer_code": item.company_code,
+                "customer_name": item.company_name,
+                "short_name": item.short_name,
+                "details": order_map[item.company_code]
+            })
+        return result
 
 
 class MaterialOperation:
@@ -192,12 +227,25 @@ class DeliveryOrderOperation:
 
             data = []
             for item in content:
-                _sn = item.get("shelf_sn")
                 _pn = item.get("part_num")
                 _model = item.get("mate_model")
                 _desc = item.get("mate_desc")
-                _qty = item.get("qty")
-                data.append(DeliveryOrderDetail(shelf_sn=_sn, part_num=_pn, mate_model=_model, mate_desc=_desc, qty=_qty, primary_inner=delivery))
+                _mate_type = item.get("mate_type")
+                _purchase_type = item.get("purchase_type")
+                # 设备出货，每个sn单独一条，配件类每个料号保存一条
+                # 成品+生成=自产出货设备(基于SN)
+                if _mate_type == MateTypeEnum.FINISHED_PRODUCT.value and _purchase_type == PurchaseTypeEnum.PRODUCT.value:
+                    _sn_list = item.get("sn_list", [])
+                    _qty = 1
+                else:
+                    _sn_list = [""]
+                    _qty = item.get("out_qty", 0)
+                # 没有出货数量的,不添加
+                if _qty <= 0:
+                    continue
+
+                for _sn in _sn_list:
+                    data.append(DeliveryOrderDetail(shelf_sn=_sn, part_num=_pn, mate_model=_model, mate_desc=_desc, qty=_qty, primary_inner=delivery))
             # 出货单详情添加
             await DeliveryOrderDetail.bulk_create(data)
             # 更新销售单状态
@@ -248,7 +296,16 @@ async def checkDiffSalesAndDelivery(sales_order_code, delivery_detail):
     delivery_cache = {}
     for item in delivery_detail:
         _pn = item.get("part_num")
-        _qty = item.get("qty")
+        sn_list = item.get("sn_list", [])
+        sn_list = list(set(sn_list))
+        _mate_type = item.get("mate_type")
+        _purchase_type = item.get("purchase_type")
+        # 设备出货，每个sn单独一条，配件类每个料号保存一条
+        # 成品+生成=自产出货设备(基于SN)
+        if _mate_type == MateTypeEnum.FINISHED_PRODUCT.value and _purchase_type == PurchaseTypeEnum.PRODUCT.value:
+            _qty = len(sn_list)
+        else:
+            _qty = item.get("out_qty")
         if _pn in delivery_cache:
             delivery_cache[_pn] += _qty
         else:

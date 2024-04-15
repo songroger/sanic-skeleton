@@ -207,6 +207,7 @@ class Order(AbstractBaseModel, TimestampMixin, UserMixin):
             "state": self.state,
             "contract_code": self.contract_code,
             "customer_code": self.customer_code,
+            "customer_name": self.customer_name,
             "delivery_time": self.delivery_time.strftime("%Y-%m-%d"),
             "commit_time": self.commit_time.strftime("%Y-%m-%d")
         }
