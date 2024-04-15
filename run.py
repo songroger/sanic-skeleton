@@ -15,7 +15,7 @@ from apps import app, auth_instance
 # from sanic_restful_api import Resource, Api
 from apps.manufacture.views import (TodoSimple, SupplierManager, MaterialManager, BOMManager, BOMDetailView,
     PoListView, PODetailView, OrderView, OrderDetailView, DeliverayManage, DeliverayDetailManage)
-from apps.manufacture.extra_views import MaterialImport, POImport
+from apps.manufacture.extra_views import MaterialImport, POImport, OrderImport, BOMImport
 from apps.manufacture.open_api import CustomerCodeList, OrderCode
 
 
@@ -40,6 +40,9 @@ app.add_route(OrderDetailView.as_view(), '/api/order_detail')
 
 app.add_route(MaterialImport.as_view(), '/api/mate_import')
 app.add_route(POImport.as_view(), '/api/po_import')
+app.add_route(OrderImport.as_view(), '/api/order_import')
+app.add_route(BOMImport.as_view(), '/api/bom_import')
+
 app.add_route(CustomerCodeList.as_view(), '/api/customer_code')
 app.add_route(OrderCode.as_view(), '/api/order_code')
 
@@ -49,7 +52,7 @@ app.add_route(DeliverayDetailManage.as_view(), '/api/delivery_detail')
 
 # Regist middleware & handler
 app.register_middleware(check_content_negotiation, "request")
-app.register_middleware(jsonapi_standard_response_header, "response")
+# app.register_middleware(jsonapi_standard_response_header, "response")
 # app.error_handler.add(Exception, handle_404)
 
 # Static dir

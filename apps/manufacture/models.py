@@ -1,12 +1,13 @@
 from tortoise import fields
 from core.base_model import AbstractBaseModel, TimestampMixin, UserMixin
+from tortoise.validators import MinLengthValidator
 
 
 class Supplier(AbstractBaseModel):
     """
     供应商管理
     """
-    company_code = fields.CharField(32, description="公司代码", unique=True)
+    company_code = fields.CharField(32, description="公司代码", unique=True, validators=[MinLengthValidator(3)])
     company_name = fields.CharField(128, description="公司名称")
     short_name = fields.CharField(32, description="简称")
     area = fields.TextField(description="国家/地区")
@@ -99,7 +100,14 @@ class BOM(AbstractBaseModel, TimestampMixin, UserMixin):
         return self.part_num
 
     def to_dict(self):
-        return dict(self)
+        return {
+            "id": self.id,
+            "part_num": self.part_num,
+            "product_version": self.product_version,
+            "mate_model": self.mate_model,
+            "mate_desc": self.mate_desc,
+            "mate_type": self.mate_type
+        }
 
     class Meta:
         table = "bom_info_primary"
@@ -208,6 +216,8 @@ class Order(AbstractBaseModel, TimestampMixin, UserMixin):
             "contract_code": self.contract_code,
             "customer_code": self.customer_code,
             "customer_name": self.customer_name,
+            "finally_customer_code": self.finally_customer_code,
+            "finally_customer_name": self.finally_customer_name,
             "delivery_time": self.delivery_time.strftime("%Y-%m-%d"),
             "commit_time": self.commit_time.strftime("%Y-%m-%d")
         }

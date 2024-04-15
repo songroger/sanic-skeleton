@@ -1,6 +1,6 @@
 import xlrd
 from sanic.views import HTTPMethodView
-from core.base import baseResponse
+from core.base import baseResponse, ResponseCode
 from .utils import parse_mate_data, parse_bom_data, parse_po_data, parse_order_data
 
 
@@ -14,7 +14,7 @@ class MaterialImport(HTTPMethodView):
         # 解析数据写入数据库
         ret = await parse_mate_data(upload_file)
 
-        return baseResponse(200, "success", {})
+        return baseResponse(ResponseCode.OK, "success", {})
 
 
 class BOMImport(HTTPMethodView):
@@ -25,9 +25,11 @@ class BOMImport(HTTPMethodView):
         file_name = upload_file.name
 
         # 解析数据写入数据库
-        ret = await parse_bom_data(upload_file)
+        ret, msg = await parse_bom_data(upload_file)
+        if not ret:
+            return baseResponse(ResponseCode.FAIL, msg, {})
 
-        return baseResponse(200, "success", {})
+        return baseResponse(ResponseCode.OK, "success", {})
 
 
 class POImport(HTTPMethodView):
@@ -38,9 +40,11 @@ class POImport(HTTPMethodView):
         file_name = upload_file.name
 
         # 解析数据写入数据库
-        ret = await parse_po_data(upload_file)
+        ret, msg = await parse_po_data(upload_file)
+        if not ret:
+            return baseResponse(ResponseCode.FAIL, msg, {})
 
-        return baseResponse(200, "success", {})
+        return baseResponse(ResponseCode.OK, "success", {})
 
 
 class OrderImport(HTTPMethodView):
@@ -51,6 +55,8 @@ class OrderImport(HTTPMethodView):
         file_name = upload_file.name
 
         # 解析数据写入数据库
-        ret = await parse_order_data(upload_file)
+        ret, msg = await parse_order_data(upload_file)
+        if not ret:
+            return baseResponse(ResponseCode.FAIL, msg, {})
 
-        return baseResponse(200, "success", {})
+        return baseResponse(ResponseCode.OK, "success", {})

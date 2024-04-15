@@ -5,6 +5,8 @@ from core.base import ResponseCode, SalesOrderStateEnum, baseResponse
 from .models import (Supplier, Material, BOM, BOMDetail, PoList, PoDetail, Order,
     OrderDetail, DeliveryOrder, DeliveryOrderDetail)
 from tortoise import Tortoise
+from tortoise.expressions import Q
+from datetime import datetime, timedelta
 
 
 class TodoSimple(HTTPMethodView):
@@ -46,6 +48,10 @@ class SupplierManager(HTTPMethodView):
     async def post(self, request):
         args = request.json
 
+        _exist = await Supplier.filter(company_code=args.get("company_code"), identity=args.get("identity")).exists()
+        if _exist and not args.get("id"):
+            return baseResponse(ResponseCode.FAIL, "已存在", {})
+
         _ = await Supplier().create_or_update(args)
 
         return baseResponse(ResponseCode.OK, "success", {})
@@ -77,6 +83,10 @@ class MaterialManager(HTTPMethodView):
 
     async def post(self, request):
         args = request.json
+
+        _exist = await Material.filter(part_num=args.get("part_num")).exists()
+        if _exist and not args.get("id"):
+            return baseResponse(ResponseCode.FAIL, "已存在", {})
 
         _ = await Material().create_or_update(args)
 
@@ -128,17 +138,17 @@ class PoListView(HTTPMethodView):
         supplier_name = request.args.get('supplier_name', "")
         po_code = request.args.get('po_code', "")
         start_datetime = request.args.get('start', "2024-01-01")
-        end_datetime = request.args.get('end', "2050-12-01")
+        end_datetime = datetime.strptime(request.args.get('end', "2050-12-01"), "%Y-%m-%d") + timedelta(days=1)
 
         po = await PoList.filter(supplier_name__contains=supplier_name,
                                  po_code__contains=po_code,
                                  commit_time__gte=start_datetime,
-                                 commit_time__lt=end_datetime
+                                 commit_time__lte=end_datetime.strftime("%Y-%m-%d")
                                  ).all().order_by('-id').offset((page - 1) * per_page).limit(per_page)
         total = await PoList.filter(supplier_name__contains=supplier_name,
                                     po_code__contains=po_code,
                                     commit_time__gte=start_datetime,
-                                    commit_time__lt=end_datetime
+                                    commit_time__lte=end_datetime.strftime("%Y-%m-%d")
                                     ).all().count()
 
         data = {
@@ -171,17 +181,17 @@ class OrderView(HTTPMethodView):
         finally_customer_name = request.args.get('supplier_name', "")
         sales_order_code = request.args.get('sales_order_code', "")
         start_datetime = request.args.get('start', "2024-01-01")
-        end_datetime = request.args.get('end', "2050-12-01")
+        end_datetime = datetime.strptime(request.args.get('end', "2050-12-01"), "%Y-%m-%d") + timedelta(days=1)
 
         order = await Order.filter(finally_customer_name__contains=finally_customer_name,
                                    sales_order_code__contains=sales_order_code,
                                    delivery_time__gte=start_datetime,
-                                   delivery_time__lt=end_datetime
+                                   delivery_time__lte=end_datetime.strftime("%Y-%m-%d")
                                    ).all().order_by('-id').offset((page - 1) * per_page).limit(per_page)
         total = await Order.filter(finally_customer_name__contains=finally_customer_name,
                                    sales_order_code__contains=sales_order_code,
                                    delivery_time__gte=start_datetime,
-                                   delivery_time__lt=end_datetime
+                                   delivery_time__lte=end_datetime.strftime("%Y-%m-%d")
                                    ).all().count()
 
         data = {
