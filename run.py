@@ -43,8 +43,8 @@ app.add_route(POImport.as_view(), '/api/po_import')
 app.add_route(CustomerCodeList.as_view(), '/api/customer_code')
 app.add_route(OrderCode.as_view(), '/api/order_code')
 
-app.add_route(DeliverayManage.as_view(), '/api/deliveray')
-app.add_route(DeliverayDetailManage.as_view(), '/api/deliveray_detail')
+app.add_route(DeliverayManage.as_view(), '/api/delivery')
+app.add_route(DeliverayDetailManage.as_view(), '/api/delivery_detail')
 
 
 # Regist middleware & handler
