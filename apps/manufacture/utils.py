@@ -4,8 +4,8 @@ from core.logger import logger
 from tortoise.transactions import atomic, in_transaction
 from core.base import MateTypeEnum, PurchaseTypeEnum, SalesOrderStateEnum, SupplierIdentityEnum
 from typing import List, Optional
-from .models import (Material, DeliveryOrderDetail, DeliveryOrder, Supplier, Order, OrderDetail,
-                     PoList, PoDetail)
+from .models import (BOM, Material, DeliveryOrderDetail, DeliveryOrder, Supplier, Order, OrderDetail,
+                     PoList, PoDetail, BOMDetail)
 
 
 def function():
