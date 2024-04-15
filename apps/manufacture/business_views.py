@@ -1,5 +1,5 @@
 from sanic import Blueprint
-from .utils import SalesOrderOperation, MaterialOperation
+from .utils import SalesOrderOperation, MaterialOperation, ComponyOperation
 from core.base import baseResponse, ResponseCode, SalesOrderStateEnum, MateTypeEnum, PurchaseTypeEnum
 
 business_bp = Blueprint('business', url_prefix='/business')
@@ -8,12 +8,12 @@ business_bp = Blueprint('business', url_prefix='/business')
 @business_bp.route("/getUnfinishedSalesOrderList", methods=['GET'])
 async def getUnfinishedSalesOrderList(request):
     """
-    PDA:获取未完成的销售订单列表(PDA出货下拉展示)
+    PDA:获取未完成的销售订单客户列表(PDA出货下拉展示)
     """
     payload = request.args
     sales_order_code = payload.get("sales_order_code", "")
-    result = await SalesOrderOperation.getOrderInfo(sales_order_code=sales_order_code, sales_state=SalesOrderStateEnum.Inprocess.value)
-    data = [item.to_dict() for item in result]
+    data = await ComponyOperation.getCustomerInfoByUnfinishSalesOrder(sales_order_code=sales_order_code)
+
     return baseResponse(ResponseCode.OK, "success", data=data)
 
 
@@ -43,7 +43,7 @@ async def getSalesOrderDetails(request):
     for item in material_list:
         pn = item.part_num
         info = item.to_dict()
-        info.update(qty = content_map[pn]['qty'])
+        info.update(qty = content_map[pn]['qty'], out_qty=0, sn_list=[])
         if item.mate_type == MateTypeEnum.FINISHED_PRODUCT.value and item.purchase_type == PurchaseTypeEnum.PRODUCT.value:
             device_list.append(info)
         else:

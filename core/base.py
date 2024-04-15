@@ -62,6 +62,14 @@ def utc_time_conversion(date_time):
     return res_time
 
 
+class SupplierIdentityEnum(Enum):
+    """
+    公司身份标识
+    """
+    Supplier = 0      # 供应商
+    Customer = 1      # 客户
+
+
 class SalesOrderStateEnum(Enum):
     """
     销售单状态
