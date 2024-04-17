@@ -327,28 +327,33 @@ async def parse_mate_data(upload_file):
     total_rows = sheet_table.nrows
 
     objects = []
-    for i in range(1, total_rows):
-        row_data = sheet_table.row_values(i)
-        objects.append(Material(part_num=row_data[1],
-                                mate_model=row_data[2],
-                                mate_desc=row_data[3],
-                                spec_size=row_data[4],
-                                spec_weight=row_data[5],
-                                spec_min_qty=row_data[6],
-                                spec_max_qty=row_data[7],
-                                mate_type=row_data[8],
-                                purchase_type=row_data[9],
-                                purchase_cycle=row_data[10],
-                                safety_stock=row_data[11],
-                                safety_lower=row_data[12],
-                                ))
-
     try:
+        for i in range(1, total_rows):
+            row_data = sheet_table.row_values(i)
+
+            _exist = await Material.filter(part_num=row_data[1]).exists()
+            if _exist:
+                return False, f"料号{row_data[1]}已存在"
+
+            objects.append(Material(part_num=row_data[1],
+                                    mate_model=row_data[2],
+                                    mate_desc=row_data[3],
+                                    spec_size=row_data[4],
+                                    spec_weight=row_data[5],
+                                    spec_min_qty=row_data[6],
+                                    spec_max_qty=row_data[7],
+                                    mate_type=row_data[8],
+                                    purchase_type=row_data[9],
+                                    purchase_cycle=row_data[10],
+                                    safety_stock=row_data[11],
+                                    safety_lower=row_data[12],
+                                    ))
+
         _ = await Material.bulk_create(objects)
-        return True
+        return True, ""
     except Exception as e:
         logger.info(e)
-        return False
+        return False, str(e)
 
 
 async def parse_bom_data(upload_file):

@@ -50,7 +50,7 @@ class SupplierManager(HTTPMethodView):
 
         _exist = await Supplier.filter(company_code=args.get("company_code"), identity=args.get("identity")).exists()
         if _exist and not args.get("id"):
-            return baseResponse(ResponseCode.FAIL, "已存在", {})
+            return baseResponse(ResponseCode.FAIL, "企业已存在", {})
 
         _ = await Supplier().create_or_update(args)
 
@@ -86,7 +86,7 @@ class MaterialManager(HTTPMethodView):
 
         _exist = await Material.filter(part_num=args.get("part_num")).exists()
         if _exist and not args.get("id"):
-            return baseResponse(ResponseCode.FAIL, "已存在", {})
+            return baseResponse(ResponseCode.FAIL, "物料已存在", {})
 
         _ = await Material().create_or_update(args)
 

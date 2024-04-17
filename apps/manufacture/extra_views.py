@@ -12,7 +12,9 @@ class MaterialImport(HTTPMethodView):
         file_name = upload_file.name
 
         # 解析数据写入数据库
-        ret = await parse_mate_data(upload_file)
+        ret, msg = await parse_mate_data(upload_file)
+        if not ret:
+            return baseResponse(ResponseCode.FAIL, msg, {})
 
         return baseResponse(ResponseCode.OK, "success", {})
 
