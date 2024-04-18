@@ -296,8 +296,8 @@ class DeliverayDetailManage(HTTPMethodView):
         page = int(request.args.get('page', 1))
         per_page = int(request.args.get('per_page', 10))
 
-        bills = await DeliverayDetailManage.all().offset((page - 1) * per_page).limit(per_page)
-        total = await DeliverayDetailManage.all().count()
+        bills = await DeliveryOrderDetail.all().offset((page - 1) * per_page).limit(per_page)
+        total = await DeliveryOrderDetail.all().count()
 
         data = {
             'data': [b.to_dict() for b in bills],
