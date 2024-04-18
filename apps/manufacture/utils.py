@@ -416,8 +416,10 @@ async def parse_po_data(upload_file):
                 row_data = sheet_table.row_values(i)
                 # print(row_data)
                 if row_data[0]:
-                    _exist_supplier_code = await Supplier.filter(company_code=row_data[2]).exists()
-                    _is_forbidden = await Supplier.filter(company_code=row_data[2], is_forbidden=1).exists()
+                    _exist_supplier_code = await Supplier.filter(company_code=row_data[2], identity=0).exists()
+                    _is_forbidden = await Supplier.filter(company_code=row_data[2],
+                                                          is_forbidden=1,
+                                                          identity=0).exists()
                     if not _exist_supplier_code or _is_forbidden:
                         return False, f"供应商代码:{row_data[2]} 不存在或者该供应商已被禁用"
 
@@ -458,13 +460,15 @@ async def parse_order_data(upload_file):
                 row_data = sheet_table.row_values(i)
                 # print(row_data)
                 if row_data[0]:
-                    _exist_supplier_code = await Supplier.filter(company_code=row_data[3]).exists()
-                    _is_forbidden = await Supplier.filter(company_code=row_data[3], is_forbidden=1).exists()
+                    _exist_supplier_code = await Supplier.filter(company_code=row_data[3], identity=1).exists()
+                    _is_forbidden = await Supplier.filter(company_code=row_data[3],
+                                                          is_forbidden=1,
+                                                          identity=1).exists()
                     if not _exist_supplier_code or _is_forbidden:
-                        return False, f"供应商代码:{row_data[3]} 不存在或者该供应商已被禁用"
+                        return False, f"客户代码:{row_data[3]} 不存在或者该客户已被禁用"
 
                     od = await Order.create(sales_order_code=row_data[1],
-                                            contract_code=row_data[2],
+                                            contract_code=str(row_data[2]) if isinstance(row_data[2], float) else row_data[2],
                                             customer_code=row_data[3],
                                             customer_name=row_data[4],
                                             finally_customer_code=row_data[5],
