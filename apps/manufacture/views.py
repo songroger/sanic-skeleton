@@ -68,9 +68,11 @@ class MaterialManager(HTTPMethodView):
     async def get(self, request):
         page = int(request.args.get('page', 1))
         per_page = int(request.args.get('per_page', 10))
+        part_num = request.args.get('part_num', "")
 
-        mate = await Material.all().order_by('-id').offset((page - 1) * per_page).limit(per_page)
-        total = await Material.all().count()
+        mate = await Material.filter(part_num__contains=part_num
+                                    ).all().order_by('-id').offset((page - 1) * per_page).limit(per_page)
+        total = await Material.filter(part_num__contains=part_num).all().count()
 
         data = {
             'mate': [m.to_dict() for m in mate],

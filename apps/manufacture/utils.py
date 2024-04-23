@@ -346,13 +346,13 @@ async def parse_mate_data(upload_file):
                                     mate_desc=row_data[3],
                                     spec_size=row_data[4],
                                     spec_weight=row_data[5],
-                                    spec_min_qty=row_data[6],
-                                    spec_max_qty=row_data[7],
+                                    spec_min_qty=int(row_data[6]) if isinstance(row_data[6], float) else row_data[6],
+                                    spec_max_qty=int(row_data[7]) if isinstance(row_data[7], float) else row_data[7],
                                     mate_type=row_data[8],
                                     purchase_type=row_data[9],
-                                    purchase_cycle=row_data[10],
-                                    safety_stock=row_data[11],
-                                    safety_lower=row_data[12],
+                                    purchase_cycle=int(row_data[10]) if isinstance(row_data[10], float) else row_data[10],
+                                    safety_stock=int(row_data[11]) if isinstance(row_data[11], float) else row_data[11],
+                                    safety_lower=int(row_data[12]) if isinstance(row_data[12], float) else row_data[12],
                                     ))
 
         _ = await Material.bulk_create(objects)
@@ -401,7 +401,7 @@ async def parse_bom_data(upload_file):
                                                     mate_model=row_data[2],
                                                     mate_desc=row_data[3],
                                                     mate_type=row_data[4],
-                                                    unit_num=row_data[5],
+                                                    unit_num=int(row_data[5]) if isinstance(row_data[5], float) else row_data[5],
                                                     unit_name=row_data[6],
                                                     tier_flag=row_data[7]
                                                    )
@@ -422,8 +422,14 @@ async def parse_po_data(upload_file):
                 row_data = sheet_table.row_values(i)
                 # print(row_data)
                 if row_data[0]:
-                    _exist_supplier_code = await Supplier.filter(company_code=row_data[2]).exists()
-                    _is_forbidden = await Supplier.filter(company_code=row_data[2], is_forbidden=1).exists()
+                    _exist_supplier_code = await Supplier.filter(company_code=row_data[2], identity=0).exists()
+                    _is_forbidden = await Supplier.filter(company_code=row_data[2],
+                                                          is_forbidden=1,
+                                                          identity=0).exists()
+                    _exist_po = await PoList.filter(po_code=row_data[1]).exists()
+                    if _exist_po:
+                        return False, f"采购单号:{row_data[1]} 已存在"
+
                     if not _exist_supplier_code or _is_forbidden:
                         return False, f"供应商代码:{row_data[2]} 不存在或者该供应商已被禁用"
 
@@ -444,7 +450,7 @@ async def parse_po_data(upload_file):
                                                    serial_num=0,
                                                    part_num=row_data[1],
                                                    unit_price=row_data[2],
-                                                   qty=row_data[3],
+                                                   qty=int(row_data[3]) if isinstance(row_data[3], float) else row_data[3],
                                                    total_price=row_data[4]
                                                    )
         return True, ""
@@ -464,8 +470,10 @@ async def parse_order_data(upload_file):
                 row_data = sheet_table.row_values(i)
                 # print(row_data)
                 if row_data[0]:
-                    _exist_supplier_code = await Supplier.filter(company_code=row_data[3]).exists()
-                    _is_forbidden = await Supplier.filter(company_code=row_data[3], is_forbidden=1).exists()
+                    _exist_supplier_code = await Supplier.filter(company_code=row_data[3], identity=1).exists()
+                    _is_forbidden = await Supplier.filter(company_code=row_data[3],
+                                                          is_forbidden=1,
+                                                          identity=1).exists()
                     if not _exist_supplier_code or _is_forbidden:
                         return False, f"客户代码:{row_data[3]} 不存在或者该客户已被禁用"
                     
@@ -475,7 +483,7 @@ async def parse_order_data(upload_file):
                         return False, f"最终客户代码:{row_data[5]} 不存在或者该客户已被禁用"
 
                     od = await Order.create(sales_order_code=row_data[1],
-                                            contract_code=row_data[2],
+                                            contract_code=str(row_data[2]) if isinstance(row_data[2], float) else row_data[2],
                                             customer_code=row_data[3],
                                             customer_name=row_data[4],
                                             finally_customer_code=row_data[5],
