@@ -230,6 +230,7 @@ class DeliveryOrderOperation:
                 _model = item.get("mate_model")
                 _desc = item.get("mate_desc")
                 _mate_type = item.get("mate_type")
+                _unit_name = item.get("unit_name")
                 _purchase_type = item.get("purchase_type")
                 # 设备出货，每个sn单独一条，配件类每个料号保存一条
                 # 成品+生成=自产出货设备(基于SN)
@@ -244,7 +245,10 @@ class DeliveryOrderOperation:
                     continue
 
                 for _sn in _sn_list:
-                    data.append(DeliveryOrderDetail(shelf_sn=_sn, part_num=_pn, mate_model=_model, mate_desc=_desc, qty=_qty, primary_inner=delivery))
+                    data.append(DeliveryOrderDetail(shelf_sn=_sn, part_num=_pn, mate_model=_model, mate_desc=_desc, qty=_qty, primary_inner=delivery, unit_name=_unit_name))
+            # 详情不能为空
+            if not data:
+                raise Exception("出货单内容不能为空!")
             # 出货单详情添加
             await DeliveryOrderDetail.bulk_create(data)
             # 更新销售单状态
@@ -312,6 +316,8 @@ async def checkDiffSalesAndDelivery(sales_order_code, delivery_detail):
 
     # 检查出库单内的料号,对比订单需求
     for pn, qty in delivery_cache.items():
+        if qty == 0:
+            continue
         # 出货单数据的料号没有订单需求，或数量超出需求，都进行错误提示
         if pn not in salse_cache:
             return False, f"{pn}料号没有订单需求,出货单数据异常,创建失败!"
@@ -461,7 +467,12 @@ async def parse_order_data(upload_file):
                     _exist_supplier_code = await Supplier.filter(company_code=row_data[3]).exists()
                     _is_forbidden = await Supplier.filter(company_code=row_data[3], is_forbidden=1).exists()
                     if not _exist_supplier_code or _is_forbidden:
-                        return False, f"供应商代码:{row_data[3]} 不存在或者该供应商已被禁用"
+                        return False, f"客户代码:{row_data[3]} 不存在或者该客户已被禁用"
+                    
+                    _exist_supplier_code = await Supplier.filter(company_code=row_data[5]).exists()
+                    _is_forbidden = await Supplier.filter(company_code=row_data[5], is_forbidden=1).exists()
+                    if not _exist_supplier_code or _is_forbidden:
+                        return False, f"最终客户代码:{row_data[5]} 不存在或者该客户已被禁用"
 
                     od = await Order.create(sales_order_code=row_data[1],
                                             contract_code=row_data[2],
@@ -477,7 +488,8 @@ async def parse_order_data(upload_file):
                     _mate_exist = await Material.filter(part_num=row_data[1]).exists()
                     _is_forbidden = await Material.filter(part_num=row_data[1], is_forbidden=1).exists()
                     if not _mate_exist or _is_forbidden:
-                        return False, f"料号{row_data[1]}不存在或已被禁用"
+                        # return False, f"料号{row_data[1]}不存在或已被禁用"
+                        raise Exception(f"料号{row_data[1]}不存在或已被禁用")
 
                     detail = await OrderDetail.create(primary_inner=od,
                                                        serial_num=0,

@@ -7,6 +7,7 @@ from apps.auth.views import auth_bp
 from apps.manufacture.business_views import business_bp 
 from apps.database.views import database_bp 
 from tortoise.contrib.sanic import register_tortoise
+from database import TORTOISE_ORM
 from core.base import ServerErrorHandler
 from settings import settings
 from core.extentions.exceptions import handle_404
@@ -14,9 +15,10 @@ from core.extentions.middlewares import check_content_negotiation, jsonapi_stand
 from apps import app, auth_instance
 # from sanic_restful_api import Resource, Api
 from apps.manufacture.views import (TodoSimple, SupplierManager, MaterialManager, BOMManager, BOMDetailView,
-    PoListView, PODetailView, OrderView, OrderDetailView, DeliverayManage, DeliverayDetailManage)
+    PoListView, PODetailView, OrderView, OrderDetailView, DeliveryManage, DeliveryDetailManage)
 from apps.manufacture.extra_views import MaterialImport, POImport, OrderImport, BOMImport
 from apps.manufacture.open_api import CustomerCodeList, OrderCode
+from apps.dashboard.views import dashboard_bp
 
 
 app.config.update_config(settings)
@@ -28,6 +30,8 @@ app.error_handler = ServerErrorHandler()
 app.blueprint(auth_bp)
 app.blueprint(business_bp)
 app.blueprint(database_bp)
+app.blueprint(dashboard_bp)
+
 app.add_route(TodoSimple.as_view(), '/api/todo')
 app.add_route(SupplierManager.as_view(), '/api/supplier')
 app.add_route(MaterialManager.as_view(), '/api/material')
@@ -46,8 +50,8 @@ app.add_route(BOMImport.as_view(), '/api/bom_import')
 app.add_route(CustomerCodeList.as_view(), '/api/customer_code')
 app.add_route(OrderCode.as_view(), '/api/order_code')
 
-app.add_route(DeliverayManage.as_view(), '/api/delivery')
-app.add_route(DeliverayDetailManage.as_view(), '/api/delivery_detail')
+app.add_route(DeliveryManage.as_view(), '/api/delivery')
+app.add_route(DeliveryDetailManage.as_view(), '/api/delivery_detail')
 
 
 # Regist middleware & handler
@@ -58,9 +62,7 @@ app.register_middleware(check_content_negotiation, "request")
 # Static dir
 app.static('/', './static/index.html', name='index')
 app.static('/static', './static/static', name='pc_static')
-app.static('/h5', './static/h5/index.html', name='h5')
-app.static('/h5/static', './static/h5/static', name='static')
-app.static('/favicon.ico', './static/favicon.ico', name='fav')
+app.static('/favicon.ico', './static/static/favicon.ico', name='fav')
 
 # restful_api init
 # api = Api(app)
@@ -68,8 +70,7 @@ app.static('/favicon.ico', './static/favicon.ico', name='fav')
 
 register_tortoise(
     app,
-    db_url=f"asyncpg://{settings.Data.get('DB_USER')}:{settings.Data.get('DB_PWD')}@{settings.Data.get('DB_HOST')}:{settings.Data.get('DB_PORT')}/{settings.Data.get('DB_NAME')}",
-    modules={"models": ["apps.auth", "apps.manufacture"]},
+    TORTOISE_ORM,
     generate_schemas=True
 )
 

@@ -1,4 +1,5 @@
 from sanic import Blueprint
+from apps.database.utils import parseReceiveDataForMachineTest
 from core.utils import loadBaseData
 from core.base import baseResponse, ResponseCode, MateTypeEnum, PurchaseTypeEnum
 
@@ -44,4 +45,18 @@ async def getMateModelList(request):
     mate_models = data[mate_type]
     
     return baseResponse(ResponseCode.OK, "success", data=mate_models)
+
+
+@database_bp.route("/receiveUploadData", methods=['POST'])
+async def receiveUploadData(request):
+    payload = request.json
+    request_type = payload.get("request_type", -1)
+    if request_type == 0:
+        data = payload.get("data")
+        await parseReceiveDataForMachineTest(data)
+        return baseResponse(ResponseCode.OK, "success", {})
+    elif request_type == 1:
+        return baseResponse(ResponseCode.OK, "success", {})
+    else:
+        return baseResponse(ResponseCode.FAIL, "请求类型错误,无法识别上传数据类型", {})
 

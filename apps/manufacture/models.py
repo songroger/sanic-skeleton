@@ -248,6 +248,7 @@ class OrderDetail(AbstractBaseModel):
             "mate_model": self.mate_model,
             "mate_desc": self.mate_desc,
             "qty": self.qty,
+            "out_qty": self.out_qty,
             "unit_name": self.unit_name,
             "remark": self.remark
         }
@@ -273,6 +274,7 @@ class DeliveryOrder(AbstractBaseModel, TimestampMixin, UserMixin):
     def to_dict(self):
         return {
             "id": self.id,
+            "customer_name": self.customer_name,
             "delivery_order_code": self.delivery_order_code,
             "sales_order_code": self.sales_order_code,
             "driver_name": self.driver_name,
@@ -302,6 +304,8 @@ class DeliveryOrderDetail(AbstractBaseModel):
     part_num = fields.CharField(32)
     mate_model = fields.CharField(32)
     mate_desc = fields.CharField(128)
+    unit_name = fields.CharField(16, description='单位')
+
     qty = fields.IntField()
 
     def __str__(self):

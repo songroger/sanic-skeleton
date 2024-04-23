@@ -34,20 +34,25 @@ async def getSalesOrderDetails(request):
         for itemY in item.details:
             part_list.append(itemY.part_num)
             content_map[itemY.part_num] = itemY.to_dict()
+
     # 自生产的成品，认为是出货产品，其余都算是配件
     material_list = await MaterialOperation.getPartNumInfos(part_num_list=part_list)
+
     # 设备列表
     device_list = []
     # 配件列表
     attachment_list = []
     for item in material_list:
         pn = item.part_num
-        info = item.to_dict()
-        info.update(qty = content_map[pn]['qty'], out_qty=0, sn_list=[])
+        new_qty = content_map[pn]['qty'] - content_map[pn]['out_qty']
+        if new_qty <= 0:
+            continue
+        order_item = content_map[pn]
+        order_item.update(qty=new_qty, out_qty=0, sn_list=[], mate_desc=item.mate_desc, mate_type=item.mate_type, purchase_type=item.purchase_type)
         if item.mate_type == MateTypeEnum.FINISHED_PRODUCT.value and item.purchase_type == PurchaseTypeEnum.PRODUCT.value:
-            device_list.append(info)
+            device_list.append(order_item)
         else:
-            attachment_list.append(info)
+            attachment_list.append(order_item)
 
     data = {
         "content": list(content_map.values()),

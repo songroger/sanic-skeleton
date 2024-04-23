@@ -249,7 +249,7 @@ class OrderDetailView(HTTPMethodView):
         return baseResponse(ResponseCode.OK, "success", data)
 
 
-class DeliverayManage(HTTPMethodView):
+class DeliveryManage(HTTPMethodView):
     async def get(self, request):
         page = int(request.args.get('page', 1))
         per_page = int(request.args.get('per_page', 10))
@@ -273,6 +273,8 @@ class DeliverayManage(HTTPMethodView):
         payload = request.json
         sales_order_code = payload.get("sales_order_code")
         content = payload.get("content")
+        if not content:
+            return baseResponse(ResponseCode.FAIL, msg="出货内容不能为空!")
 
         # 出货单号自动生成
         delivery_order_code = await DeliveryOrderOperation.generateDeliveryOrderCode(sales_order_code=sales_order_code)
@@ -289,23 +291,29 @@ class DeliverayManage(HTTPMethodView):
         return baseResponse(ResponseCode.OK, msg="ok")
 
 
-class DeliverayDetailManage(HTTPMethodView):
+class DeliveryDetailManage(HTTPMethodView):
     async def get(self, request):
         page = int(request.args.get('page', 1))
         per_page = int(request.args.get('per_page', 10))
+        delivery_order_code = request.args.get("delivery_order_code")
 
-        bills = await DeliveryOrderDetail.all().offset((page - 1) * per_page).limit(per_page)
-        total = await DeliveryOrderDetail.all().count()
-
+        info = await DeliveryOrderOperation.getOrderInfo(delivery_order_code=delivery_order_code)
+        if not info:
+            result = []
+            total = 0
+        else:
+            bills = await DeliveryOrderDetail.filter(primary_inner_id=info.id).offset((page - 1) * per_page).limit(per_page)
+            total = await DeliveryOrderDetail.all().count()
+            result = [b.to_dict() for b in bills]
         data = {
-            'data': [b.to_dict() for b in bills],
+            'data': result,
             'total': total,
             'page': page,
             'per_page': per_page
         }
 
         return baseResponse(ResponseCode.OK, "success", data)
-        
+
 
 
 
