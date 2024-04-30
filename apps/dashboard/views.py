@@ -63,10 +63,10 @@ class Dashboard(HTTPMethodView):
     async def get(self, request):
         result = {}
         # 控制箱
-        head_control_box_data = [["当月订单数", 1000, 0],
-                       ["已生产数", 800, 0],
-                       ["剩余", 200, 0],
-                       ["", 80, 1]]
+        head_control_box_data = [["当月订单数", 0, 0],
+                       ["已生产数", 0, 0],
+                       ["剩余", 0, 0],
+                       ["", 0, 1]]
         result = formatDashboardItem(location='head', title='控制箱', infos=head_control_box_data, data=result)
 
         # 感应板

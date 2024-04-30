@@ -1,6 +1,6 @@
 from typing import List
 from tortoise.transactions import in_transaction
-from .models import MachineTestRecord, MachineTestSummary
+from .models import MachineTestRecord, MachineTestSummary, PCBATestSummary, PCBATestRecord
 
 
 async def parseReceiveDataForMachineTest(data):
@@ -70,11 +70,75 @@ async def parseReceiveDataForMachineTest(data):
 
     # 添加数据
 
-def parseReceiveDataForPCBATest(data):
+
+def pcbaItemRecordHandle(infos: list):
+    """
+    将整组数据进行格式化
+    """
+    insert_record_obj_list = []
+    success_list = []
+    for item in infos:
+        _id = item.get("id")
+        _created_by = item.get("created_by")
+        _created_time = item.get("created_time")
+        _test_id = item.get("test_id")
+        _board_sn = item.get("board_sn")
+        _process_id = item.get("process_id")
+        _test_result = item.get("test_result")
+        _test_note = item.get("test_note")
+        _vendor_code = item.get("vendor_code", "")
+        _po_code = item.get("po_code", "")
+        success_list.append(_test_result)
+
+        record = PCBATestRecord(record_created_by=_created_by, record_created_time=_created_time, record_test_id=_test_id, 
+                        record_detail_id=_id, record_item_name=_process_id, record_result=_test_result,
+                        record_deleted=0, record_result_comment=_test_note)
+        insert_record_obj_list.append(record)
+
+    # 主测试结果汇总
+    result = 1
+    success_list = list(set(success_list))
+    if len(success_list) > 1:
+        result = 0
+    elif len(success_list) == 1:
+        if success_list[0] == 'NG':
+            result = 0
+    else:
+        result = 0
+    
+    # 提取整组的测试结果
+    summary = infos[0]
+    summary = PCBATestSummary(record_test_id=summary['test_id'], record_sn=summary['board_sn'], record_created_by=summary['created_by'], 
+                    record_created_time=summary['created_time'], record_purchase_code=summary.get('vendor_code', ""), 
+                    record_result=result, record_deleted = 0)
+    return summary, insert_record_obj_list
+
+
+async def parseReceiveDataForPCBATest(data):
     """
     解析PCBA测试上报数据
     """
-    pass
+    test_summary_map = {}
+    # 供应商编号
+    # factory_code = data.get("factory_code")
+    data_list = data
+    # 使用test_id作为key将数据进行分组
+    for test_item in data_list:
+        test_id = test_item.get("test_id")
+        if test_id not in test_summary_map:
+            test_summary_map[test_id] = []
+        test_summary_map[test_id].append(test_item)
+
+    # 过滤之前已存在的test_id数据,不再添加
+    test_is_list = list(test_summary_map.keys())
+    can_used_list = await PCBATestRecordOperation.filterTestIdByHistory(test_id_list=test_is_list)
+
+    new_record_list = []
+    # 只添加新test_id数据
+    for test_id in can_used_list:
+        new_record_list.append(test_summary_map[test_id])
+    # 添加数据
+    await PCBATestRecordOperation.AddPCBARecord(new_record_list)
 
 
 class MachineTestSummaryOperation:
@@ -174,4 +238,41 @@ class MachineTestSummaryOperation:
             if update_record:
                 await MachineTestRecord.bulk_update(update_record, fields=['record_deleted'])
 
+
+class PCBATestRecordOperation:
+    """
+    PCBA测试记录操作
+    """
+    @classmethod
+    async def filterTestIdByHistory(cls, test_id_list):
+        """
+        过滤测试ID历史记录,返回可以插入的新ID列表
+        """
+        # 缓存测试主数据的状态
+        test_res = await PCBATestSummary.filter(record_test_id__in=test_id_list).all()
+        history_test_id_list = []
+        for item in test_res:
+            test_id = item.record_test_id
+            history_test_id_list.append(test_id)
+        new_test_list = list(set(test_id_list).difference(history_test_id_list))
+        return new_test_list
+    
+    @classmethod
+    async def AddPCBARecord(cls, upload_data: list):
+        """
+        添加数据
+        """
+        summary_list = []
+        record_list = []
+        print(upload_data)
+        for infos in upload_data:
+            summary, records = pcbaItemRecordHandle(infos=infos)
+            summary_list.append(summary)
+            record_list += records
+        
+        async with in_transaction():
+            if summary_list:
+                await PCBATestSummary.bulk_create(summary_list)
+            if record_list:
+                await PCBATestRecord.bulk_create(record_list)
 

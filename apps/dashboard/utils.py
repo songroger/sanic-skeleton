@@ -8,7 +8,7 @@ async def getWholeMachineHeadData():
     获取整机HEAD数据
     """
     cur_month = datetime.date.today().strftime("%Y-%m")
-    # TODO 待处理
+    # TODO 看板数据计算待处理
     
 
 async def getWholeMachineContentData():
@@ -20,7 +20,10 @@ async def getWholeMachineContentData():
     q_sql = """
     select shelf_sn,count(*) from factory_test_summary where created_time >='2023-01-01' and created_time<='2024-01-31' and test_case_result='2' and is_deleted group by shelf_sn;
     """
-    # TODO 待处理
+    # TODO 看板数据计算待处理
     
+
+def 整机测试统计():
+    pass
 
 

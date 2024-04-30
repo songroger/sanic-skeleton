@@ -1,1 +1,1 @@
-from .models import MachineTestRecord, MachineTestSummary
+from .models import MachineTestRecord, MachineTestSummary, PCBATestSummary, PCBATestRecord

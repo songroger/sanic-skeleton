@@ -62,6 +62,14 @@ async def getSalesOrderDetails(request):
     return baseResponse(ResponseCode.OK, "success", data=data)
 
 
+@business_bp.route("/checkShelfSNValid", methods=['POST'])
+async def checkShelfSNValid(request):
+    """
+    TODO 出货扫描时,解析料架铭牌内容,并与订单内容进行对比,判断是否可以出货!
+    """
+    payload = request.json
+    shelf_sn = payload.get("shelf_sn")
+    return baseResponse(ResponseCode.OK, "success")
 
 
 
