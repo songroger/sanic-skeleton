@@ -171,11 +171,12 @@ class PODetailView(HTTPMethodView):
         # 采购单号
         po_code = request.args.get('po_code')
         # 过滤采购单内容型号【0料架，1感应板】
-        filter_model = request.args.get('filter_model')
+        filter_model = request.args.get('filter_model', -1)
 
+        print(filter_model, type(filter_model))
         if not po_id and not po_code:
             return baseResponse(ResponseCode.FAIL, "缺失查询参数!")
-        if filter_model and str(filter_model) not in ['0', '1']:
+        if filter_model != -1 and str(filter_model) not in ['0', '1']:
             return baseResponse(ResponseCode.FAIL, "指定过滤类型错误!")
         
         filter_model = int(filter_model)
