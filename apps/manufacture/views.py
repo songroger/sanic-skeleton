@@ -296,12 +296,35 @@ class DeliveryManage(HTTPMethodView):
     async def get(self, request):
         page = int(request.args.get('page', 1))
         per_page = int(request.args.get('per_page', 10))
+        customer_name = request.args.get("customer_name")
+        delivery_order_code = request.args.get("delivery_order_code")
+        start = request.args.get("start")
+        end = request.args.get("end")
 
-        bills = await DeliveryOrder.all().offset((page - 1) * per_page).limit(per_page)
+        bills = DeliveryOrder.all()
+        if customer_name:
+            bills = bills.filter(customer_name__contains=customer_name)
+        if delivery_order_code:
+            bills = bills.filter(customer_name__contains=delivery_order_code)
+        if start:
+            bills = bills.filter(created_time__range=(start, end))
+
+        bills = await bills.offset((page - 1) * per_page).limit(per_page)
+        sales_list = []
+        for item in bills:
+            sales_list.append(item.sales_order_code)
+        sales_map = await SalesOrderOperation.getInfosByOrderList(sales_order_list=sales_list)
+
+        data_list = []
+        for item in bills:
+            sale_info = sales_map[item.sales_order_code]
+            item = item.to_dict()
+            item.update(delivery_time=sale_info.delivery_time.strftime("%Y-%m-%d"))
+            data_list.append(item)
         total = await DeliveryOrder.all().count()
 
         data = {
-            'data': [b.to_dict() for b in bills],
+            'data': data_list,
             'total': total,
             'page': page,
             'per_page': per_page
@@ -338,9 +361,9 @@ class DeliveryDetailManage(HTTPMethodView):
     async def get(self, request):
         page = int(request.args.get('page', 1))
         per_page = int(request.args.get('per_page', 10))
-        delivery_order_code = request.args.get("delivery_order_code")
+        payload = request.args
 
-        info = await DeliveryOrderOperation.getOrderInfo(delivery_order_code=delivery_order_code)
+        info = await DeliveryOrderOperation.getOrderInfo(payload)
         if not info:
             result = []
             total = 0
