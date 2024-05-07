@@ -225,6 +225,9 @@ class DeliveryOrderOperation:
             await delivery.save()
 
             data = []
+
+            # 料架sn统计
+            shelf_sn_list = []
             for item in content:
                 _pn = item.get("part_num")
                 _model = item.get("mate_model")
@@ -237,6 +240,7 @@ class DeliveryOrderOperation:
                 if _mate_type == MateTypeEnum.FINISHED_PRODUCT.value and _purchase_type == PurchaseTypeEnum.PRODUCT.value:
                     _sn_list = item.get("sn_list", [])
                     _qty = 1
+                    shelf_sn_list += _sn_list
                 else:
                     _sn_list = [""]
                     _qty = item.get("out_qty", 0)
@@ -249,6 +253,11 @@ class DeliveryOrderOperation:
             # 详情不能为空
             if not data:
                 raise Exception("出货单内容不能为空!")
+            exist_infos = await DeliveryOrderDetail.filter(shelf_sn__in=shelf_sn_list).all()
+            if exist_infos:
+                sn = exist_infos[0].shelf_sn
+                raise Exception(f"{sn}设备已出货!无法再次扫描")
+                
             # 出货单详情添加
             await DeliveryOrderDetail.bulk_create(data)
             # 更新销售单状态
@@ -441,14 +450,16 @@ async def parse_po_data(upload_file):
                                              )
 
                 elif row_data[1] != "物料编码":
-                    _mate_exist = await Material.filter(part_num=row_data[1]).exists()
-                    _is_forbidden = await Material.filter(part_num=row_data[1], is_forbidden=1).exists()
-                    if not _mate_exist or _is_forbidden:
-                        return False, f"料号{row_data[1]}不存在或已被禁用"
+                    _mate_info = await Material.filter(part_num=row_data[1]).first()
+                    if not _mate_info:
+                        return False, f"料号{row_data[1]}不存在"
+                    elif _mate_info.is_forbidden == 1:
+                        return False, f"料号{row_data[1]}已被禁用"
 
                     detail = await PoDetail.create(primary_inner_id=po.id,
                                                    serial_num=0,
                                                    part_num=row_data[1],
+                                                   mate_model=_mate_info.mate_model,
                                                    unit_price=row_data[2],
                                                    qty=int(row_data[3]) if isinstance(row_data[3], float) else row_data[3],
                                                    total_price=row_data[4]
