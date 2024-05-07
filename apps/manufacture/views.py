@@ -2,6 +2,7 @@ from sanic.views import HTTPMethodView
 # from sanic.response import json as sanicjson
 from apps.manufacture.utils import DeliveryOrderOperation, SalesOrderOperation, checkDiffSalesAndDelivery
 from core.base import ResponseCode, SalesOrderStateEnum, baseResponse
+from core.utils import loadJsonConf
 from .models import (Supplier, Material, BOM, BOMDetail, PoList, PoDetail, Order,
     OrderDetail, DeliveryOrder, DeliveryOrderDetail)
 from tortoise import Tortoise
@@ -165,13 +166,47 @@ class PoListView(HTTPMethodView):
 
 class PODetailView(HTTPMethodView):
     async def get(self, request):
-        po_id = int(request.args.get('po_id'))
+        # 采购单ID
+        po_id = request.args.get('po_id')
+        # 采购单号
+        po_code = request.args.get('po_code')
+        # 过滤采购单内容型号【0料架，1感应板】
+        filter_model = request.args.get('filter_model')
 
-        detail = await PoDetail.filter(primary_inner_id=po_id).order_by('-id')
+        if not po_id and not po_code:
+            return baseResponse(ResponseCode.FAIL, "缺失查询参数!")
+        if filter_model and str(filter_model) not in ['0', '1']:
+            return baseResponse(ResponseCode.FAIL, "指定过滤类型错误!")
+        
+        filter_model = int(filter_model)
 
-        data = {
-            'detail': [d.to_dict() for d in detail]
-        }
+        query = PoList
+        if po_id:
+            query = query.filter(id=po_id)
+        if po_code:
+            query = query.filter(po_code=po_code)
+        po_info = await query.order_by('-id').prefetch_related("details").first()
+        if po_info:
+            # 加载配置数据
+            file_path = "data/mate_model_group.json"
+            flag, data, msg = loadJsonConf(file_path=file_path)
+            mate_model_list = []
+            if flag:
+                if filter_model == 0:
+                    mate_model_list = data.get("machine", [])
+                elif filter_model == 1:
+                    mate_model_list = data.get("pcba", [])
+            detail = []
+            for item in po_info.details:
+                if mate_model_list and item.mate_model not in mate_model_list:
+                    continue
+                item = item.to_dict()
+                detail.append(item)
+            data = {
+                'detail': detail
+            }
+        else:
+            data = {"detail": []}
 
         return baseResponse(ResponseCode.OK, "success", data)
 
@@ -236,7 +271,6 @@ class OrderView(HTTPMethodView):
         
         await OrderDetail.bulk_create(data)
         return baseResponse(ResponseCode.OK, msg="ok")
-
 
 class OrderDetailView(HTTPMethodView):
     async def get(self, request):

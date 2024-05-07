@@ -3,14 +3,14 @@ from tortoise.transactions import in_transaction
 from .models import MachineTestRecord, MachineTestSummary, PCBATestSummary, PCBATestRecord
 
 
-async def parseReceiveDataForMachineTest(data):
+async def parseReceiveDataForMachineTest(payload):
     """
     解析整机测试上报数据
     """
     test_id_list = []
     # 供应商编号
-    # factory_code = data.get("factory_code")
-    data_list = data
+    factory_code = payload.get("factory_code")
+    data_list = payload.get("data")
     for test_item in data_list:
         test_id = test_item.get("test_id")
         test_id_list.append(test_id)
@@ -71,7 +71,7 @@ async def parseReceiveDataForMachineTest(data):
     # 添加数据
 
 
-def pcbaItemRecordHandle(infos: list):
+def pcbaItemRecordHandle(factory_code: str, infos: list):
     """
     将整组数据进行格式化
     """
@@ -109,19 +109,19 @@ def pcbaItemRecordHandle(infos: list):
     # 提取整组的测试结果
     summary = infos[0]
     summary = PCBATestSummary(record_test_id=summary['test_id'], record_sn=summary['board_sn'], record_created_by=summary['created_by'], 
-                    record_created_time=summary['created_time'], record_purchase_code=summary.get('vendor_code', ""), 
+                    record_created_time=summary['created_time'], record_customer_code=summary.get('vendor_code', ""), record_purchase_code=summary.get('po_code', ""), 
                     record_result=result, record_deleted = 0)
     return summary, insert_record_obj_list
 
 
-async def parseReceiveDataForPCBATest(data):
+async def parseReceiveDataForPCBATest(payload):
     """
     解析PCBA测试上报数据
     """
     test_summary_map = {}
     # 供应商编号
-    # factory_code = data.get("factory_code")
-    data_list = data
+    factory_code = payload.get("factory_code")
+    data_list = payload.get("data")
     # 使用test_id作为key将数据进行分组
     for test_item in data_list:
         test_id = test_item.get("test_id")
@@ -138,7 +138,7 @@ async def parseReceiveDataForPCBATest(data):
     for test_id in can_used_list:
         new_record_list.append(test_summary_map[test_id])
     # 添加数据
-    await PCBATestRecordOperation.AddPCBARecord(new_record_list)
+    await PCBATestRecordOperation.AddPCBARecord(factory_code, new_record_list)
 
 
 class MachineTestSummaryOperation:
@@ -258,7 +258,7 @@ class PCBATestRecordOperation:
         return new_test_list
     
     @classmethod
-    async def AddPCBARecord(cls, upload_data: list):
+    async def AddPCBARecord(cls, factory_code: str, upload_data: list):
         """
         添加数据
         """
@@ -266,7 +266,7 @@ class PCBATestRecordOperation:
         record_list = []
         print(upload_data)
         for infos in upload_data:
-            summary, records = pcbaItemRecordHandle(infos=infos)
+            summary, records = pcbaItemRecordHandle(factory_code=factory_code, infos=infos)
             summary_list.append(summary)
             record_list += records
         

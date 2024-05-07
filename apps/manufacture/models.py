@@ -166,9 +166,10 @@ class PoList(AbstractBaseModel, TimestampMixin, UserMixin):
 
 
 class PoDetail(AbstractBaseModel):
-    primary_inner_id = fields.IntField()
+    primary_inner = fields.ForeignKeyField('models.PoList', 'details')
     serial_num = fields.CharField(32)
     part_num = fields.CharField(32)
+    mate_model = fields.CharField(32, description="物料型号")
     unit_price = fields.DecimalField(max_digits=11, decimal_places=2, description='单价')
     qty = fields.IntField(description='数量')
     total_price = fields.DecimalField(max_digits=11, decimal_places=2, description='总价')
@@ -183,6 +184,7 @@ class PoDetail(AbstractBaseModel):
             "part_num": self.part_num,
             "unit_price": float(self.unit_price),
             "qty": self.qty,
+            "mate_model": self.mate_model,
             "total_price": float(self.total_price)
         }
 

@@ -1,6 +1,6 @@
 from sanic import Blueprint
 from apps.database.utils import parseReceiveDataForMachineTest, parseReceiveDataForPCBATest
-from core.utils import loadBaseData
+from core.utils import checkSupplierCode, loadJsonConf
 from core.base import baseResponse, ResponseCode, MateTypeEnum, PurchaseTypeEnum
 
 
@@ -35,7 +35,8 @@ async def getMateModelList(request):
     mate_type = payload.get("mate_type")
 
     # 加载配置文件
-    flag, data, msg = loadBaseData()
+    file_path = "data/mate_model_list.json"
+    flag, data, msg = loadJsonConf(file_path=file_path)
     if flag is False:
         return baseResponse(ResponseCode.FAIL, msg=msg)
     if mate_type not in data:
@@ -51,12 +52,17 @@ async def getMateModelList(request):
 async def receiveUploadData(request):
     payload = request.json
     request_type = payload.get("request_type", -1)
-    data = payload.get("data")
+    factory_code = payload.get("factory_code")
+
+    supplier_info = await checkSupplierCode(factory_code=factory_code, is_disable=0)
+    if not supplier_info:
+        return baseResponse(ResponseCode.FAIL, f"供应商<{factory_code}>不存在,无法上传数据!", {})
+    # data = payload.get("data")
     if request_type == 0:
-        await parseReceiveDataForMachineTest(data)
+        await parseReceiveDataForMachineTest(payload)
         return baseResponse(ResponseCode.OK, "success", {})
     elif request_type == 1:
-        await parseReceiveDataForPCBATest(data)
+        await parseReceiveDataForPCBATest(payload)
         return baseResponse(ResponseCode.OK, "success", {})
     else:
         return baseResponse(ResponseCode.FAIL, "请求类型错误,无法识别上传数据类型", {})

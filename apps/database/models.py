@@ -62,6 +62,7 @@ class PCBATestSummary(AbstractBaseModel):
     record_created_by = fields.CharField(36, description="测试流程创建人")
     record_created_time = fields.CharField(36, description="测试流程创建时间")
     record_purchase_code = fields.CharField(36, description="采购单号")
+    record_customer_code = fields.CharField(36, description="客户")
     record_result = fields.IntField(description="测试结果")
     record_deleted = fields.IntField(description="软删除", default=0)
 

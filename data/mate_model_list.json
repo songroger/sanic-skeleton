@@ -22,11 +22,35 @@
         },
         {
             "model": "MM-004"
+        },
+        {
+            "model": "P02"
+        },
+        {
+            "model": "P06"
+        },
+        {
+            "model": "P08"
+        },
+        {
+            "model": "P11"
+        },
+        {
+            "model": "P18"
+        },
+        {
+            "model": "P20"
+        },
+        {
+            "model": "P26"
         }
     ],
     "成品": [
         {
-            "model": "HH-001"
+            "model": "SS-8D1664"
+        },
+        {
+            "model": "MS-4D107"
         },
         {
             "model": "HH-002"
