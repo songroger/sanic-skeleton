@@ -138,17 +138,20 @@ class PoListView(HTTPMethodView):
         page = int(request.args.get('page', 1))
         per_page = int(request.args.get('per_page', 10))
         supplier_name = request.args.get('supplier_name', "")
+        supplier_code = request.args.get('supplier_code', "")
         po_code = request.args.get('po_code', "")
         start_datetime = request.args.get('start', "2024-01-01")
         end_datetime = datetime.strptime(request.args.get('end', "2050-12-01"), "%Y-%m-%d") + timedelta(days=1)
 
         po = await PoList.filter(supplier_name__contains=supplier_name,
                                  po_code__contains=po_code,
+                                 supplier_code__contains=supplier_code,
                                  commit_time__gte=start_datetime,
                                  commit_time__lte=end_datetime.strftime("%Y-%m-%d")
                                  ).all().order_by('-id').offset((page - 1) * per_page).limit(per_page)
         total = await PoList.filter(supplier_name__contains=supplier_name,
                                     po_code__contains=po_code,
+                                    supplier_code__contains=supplier_code,
                                     commit_time__gte=start_datetime,
                                     commit_time__lte=end_datetime.strftime("%Y-%m-%d")
                                     ).all().count()
@@ -182,16 +185,19 @@ class OrderView(HTTPMethodView):
         per_page = int(request.args.get('per_page', 10))
         finally_customer_name = request.args.get('supplier_name', "")
         sales_order_code = request.args.get('sales_order_code', "")
+        customer_code = request.args.get('customer_code', "")
         start_datetime = request.args.get('start', "2024-01-01")
         end_datetime = datetime.strptime(request.args.get('end', "2050-12-01"), "%Y-%m-%d") + timedelta(days=1)
 
         order = await Order.filter(finally_customer_name__contains=finally_customer_name,
                                    sales_order_code__contains=sales_order_code,
+                                   customer_code__contains=customer_code,
                                    delivery_time__gte=start_datetime,
                                    delivery_time__lte=end_datetime.strftime("%Y-%m-%d")
                                    ).all().order_by('-id').offset((page - 1) * per_page).limit(per_page)
         total = await Order.filter(finally_customer_name__contains=finally_customer_name,
                                    sales_order_code__contains=sales_order_code,
+                                   customer_code__contains=customer_code,
                                    delivery_time__gte=start_datetime,
                                    delivery_time__lte=end_datetime.strftime("%Y-%m-%d")
                                    ).all().count()
