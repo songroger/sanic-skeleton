@@ -442,7 +442,7 @@ async def parse_po_data(upload_file):
                     if not _exist_supplier_code or _is_forbidden:
                         return False, f"供应商代码:{row_data[2]} 不存在或者该供应商已被禁用"
 
-                    po = await PoList.create(po_code=row_data[1],
+                    po = await PoList.create(po_code=str(int(row_data[1])) if isinstance(row_data[1], float) else row_data[1],
                                              supplier_code=row_data[2],
                                              supplier_name=row_data[3],
                                              delivery_time=row_data[4],
@@ -452,8 +452,10 @@ async def parse_po_data(upload_file):
                 elif row_data[1] != "物料编码":
                     _mate_info = await Material.filter(part_num=row_data[1]).first()
                     if not _mate_info:
+                        _ = await po.delete()
                         return False, f"料号{row_data[1]}不存在"
                     elif _mate_info.is_forbidden == 1:
+                        _ = await po.delete()
                         return False, f"料号{row_data[1]}已被禁用"
 
                     detail = await PoDetail.create(primary_inner_id=po.id,
@@ -508,6 +510,7 @@ async def parse_order_data(upload_file):
                     _is_forbidden = await Material.filter(part_num=row_data[1], is_forbidden=1).exists()
                     if not _mate_exist or _is_forbidden:
                         # return False, f"料号{row_data[1]}不存在或已被禁用"
+                        _ = await od.delete()
                         raise Exception(f"料号{row_data[1]}不存在或已被禁用")
 
                     detail = await OrderDetail.create(primary_inner=od,
