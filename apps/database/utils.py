@@ -65,7 +65,7 @@ async def parseReceiveDataForMachineTest(payload):
             else:
                 insert_record_list.append(item2)
     
-    await MachineTestSummaryOperation.addAndUpdateTestResultInfo(insert_summary_list=insert_summary_list, update_summary_dict=update_summary_dict, 
+    await MachineTestSummaryOperation.addAndUpdateTestResultInfo(factory_code=factory_code, insert_summary_list=insert_summary_list, update_summary_dict=update_summary_dict, 
                                                                  insert_record_list=insert_record_list, update_record_dict=update_record_dict)
 
     # 添加数据
@@ -166,7 +166,7 @@ class MachineTestSummaryOperation:
         return test_map, data_map
 
     @classmethod
-    async def addAndUpdateTestResultInfo(cls, insert_summary_list: List[dict], update_summary_dict: dict, 
+    async def addAndUpdateTestResultInfo(cls, factory_code: str, insert_summary_list: List[dict], update_summary_dict: dict, 
                                          insert_record_list: List[dict], update_record_dict: dict):
         """
         添加即更新测试数据
@@ -183,7 +183,7 @@ class MachineTestSummaryOperation:
             record_result = item.get("test_case_result")
             record_deleted = item.get("is_deleted")
             summary = MachineTestSummary(record_test_id=record_test_id, record_shelf_sn=record_shelf_sn, record_test_strategy=record_test_strategy,
-                            record_created_by=record_created_by, record_created_time=record_created_time, record_customer_code=record_customer_code,
+                            record_created_by=record_created_by, record_created_time=record_created_time, record_customer_code=factory_code,
                             record_purchase_code=record_purchase_code, record_result=record_result, record_deleted=record_deleted)
             insert_summary_obj_list.append(summary)
         

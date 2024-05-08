@@ -1,2 +1,1 @@
-from .models import FactoryParm, FactoryRecord, FactoryUser, ShelfDeviceConfig, \
-    FactoryTestCase, FactoryTestSum
+from .models import FactoryParm, FactoryUser, ShelfDeviceConfig
