@@ -307,8 +307,9 @@ class DeliveryManage(HTTPMethodView):
         if delivery_order_code:
             bills = bills.filter(customer_name__contains=delivery_order_code)
         if start:
-            bills = bills.filter(created_time__range=(start, end))
-
+            end = datetime.strptime(end, "%Y-%m-%d") + timedelta(days=1)
+            bills = bills.filter(created_time__gte=start, created_time__lte=end)
+        # print(bills.sql())
         bills = await bills.offset((page - 1) * per_page).limit(per_page)
         sales_list = []
         for item in bills:
