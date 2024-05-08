@@ -402,6 +402,7 @@ async def parse_bom_data(upload_file):
                     _mate_exist = await Material.filter(part_num=row_data[1]).exists()
                     _is_forbidden = await Material.filter(part_num=row_data[1], is_forbidden=1).exists()
                     if not _mate_exist or _is_forbidden:
+                        _ = await bo.delete()
                         return False, f"料号{row_data[1]}不存在或已被禁用"
 
                     detail = await BOMDetail.create(primary_inner_id=bo.id,
@@ -430,7 +431,11 @@ async def parse_po_data(upload_file):
             for i in range(1, total_rows):
                 row_data = sheet_table.row_values(i)
                 # print(row_data)
+
                 if row_data[0]:
+                    if not row_data[1] or not row_data[2] or not row_data[3]:
+                        return False, f"请填写完整表格数据"
+
                     _exist_supplier_code = await Supplier.filter(company_code=row_data[2], identity=0).exists()
                     _is_forbidden = await Supplier.filter(company_code=row_data[2],
                                                           is_forbidden=1,
@@ -483,10 +488,15 @@ async def parse_order_data(upload_file):
                 row_data = sheet_table.row_values(i)
                 # print(row_data)
                 if row_data[0]:
+                    _exist_order = await Order.filter(sales_order_code=row_data[1]).exists()
                     _exist_supplier_code = await Supplier.filter(company_code=row_data[3], identity=1).exists()
                     _is_forbidden = await Supplier.filter(company_code=row_data[3],
                                                           is_forbidden=1,
                                                           identity=1).exists()
+
+                    if _exist_order:
+                        return False, f"订单号:{row_data[1]} 已存在"
+
                     if not _exist_supplier_code or _is_forbidden:
                         return False, f"客户代码:{row_data[3]} 不存在或者该客户已被禁用"
                     
@@ -495,8 +505,8 @@ async def parse_order_data(upload_file):
                     if not _exist_supplier_code or _is_forbidden:
                         return False, f"最终客户代码:{row_data[5]} 不存在或者该客户已被禁用"
 
-                    od = await Order.create(sales_order_code=row_data[1],
-                                            contract_code=str(row_data[2]) if isinstance(row_data[2], float) else row_data[2],
+                    od = await Order.create(sales_order_code=str(int(row_data[1])) if isinstance(row_data[1], float) else row_data[1],
+                                            contract_code=str(int(row_data[2])) if isinstance(row_data[2], float) else row_data[2],
                                             customer_code=row_data[3],
                                             customer_name=row_data[4],
                                             finally_customer_code=row_data[5],
