@@ -182,6 +182,17 @@ class SalesOrderOperation:
         # 对比订单及出货单进度,判断最终状态
         await sales.save()
 
+    @classmethod
+    async def getInfosByOrderList(cls, sales_order_list):
+        """
+        获取工单信息列表
+        """
+        sales_order_list = list(set(sales_order_list))
+        infos = await Order.filter(sales_order_code__in=sales_order_list).all()
+        order_map = {}
+        for info in infos:
+            order_map[info.sales_order_code] = info
+        return order_map
 
 
 class DeliveryOrderOperation:
@@ -293,9 +304,17 @@ class DeliveryOrderOperation:
         
 
     @classmethod
-    async def getOrderInfo(cls, delivery_order_code):
+    async def getOrderInfo(cls, payload):
         """获取出货单信息"""
-        order_info = await DeliveryOrder.filter(delivery_order_code=delivery_order_code).prefetch_related("details").first()
+        customer_name = payload.get("customer_name")
+        delivery_order_code = payload.get("delivery_order_code")
+
+        query = DeliveryOrder
+        if delivery_order_code:
+            query = query.filter(delivery_order_code=delivery_order_code)
+        if customer_name:
+            query = query.filter(customer_name=customer_name)
+        order_info = await query.prefetch_related("details").first()
         return order_info
 
 
