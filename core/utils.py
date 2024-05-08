@@ -132,8 +132,10 @@ class DashBoard:
         """
         获取整机Content数据
         """
-        logger.info("开始统计了")
-        today = datetime.date.today().strftime("%Y-%m-%d")
+        # logger.info("开始统计了")
+        now_time = datetime.datetime.now()
+        start_time = now_time.strftime("%Y-%m-%d") + " 00:00:00"
+        end_time = now_time.strftime("%Y-%m-%d %H:%M:%S")
         
         # 按供应商统计
         result = {}
@@ -144,7 +146,7 @@ class DashBoard:
         shelf_sn_fail_removel = []
 
         # 查询整机测试结果数据，限制测试时间,
-        summarys = await MachineTestSummary.filter(record_created_time__contains=today).order_by("id").all()
+        summarys = await MachineTestSummary.filter(record_created_time__range=(start_time, end_time)).order_by("id").all()
         # summarys = await MachineTestSummary.all()
         logger.info(f">>:{summarys}")
         if summarys:
@@ -229,7 +231,9 @@ class DashBoard:
         获取整机Content数据
         """
         logger.info("开始统计了")
-        today = datetime.date.today().strftime("%Y-%m-%d")
+        now_time = datetime.datetime.now()
+        start_time = now_time.strftime("%Y-%m-%d") + " 00:00:00"
+        end_time = now_time.strftime("%Y-%m-%d %H:%M:%S")
         
         # 按供应商统计
         result = {}
@@ -240,7 +244,7 @@ class DashBoard:
         shelf_sn_fail_removel = []
 
         # 查询整机测试结果数据，限制测试时间,
-        summarys = await PCBATestSummary.filter(record_created_time__contains=today).order_by("id").all()
+        summarys = await PCBATestSummary.filter(record_created_time__range=(start_time, end_time)).order_by("id").all()
         # summarys = await MachineTestSummary.all()
         logger.info(f">>:{summarys}")
         if summarys:
