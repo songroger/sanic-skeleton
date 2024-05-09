@@ -89,13 +89,16 @@ async def getFinishedPurchaseInfo(month):
         po_list.append(item_po.po_code)
 
     machine_list = []
-    machine_summarys = await MachineTestSummary.filter(record_purchase_code__in=po_list).all()
+    # 只统计早于当前时间的数据
+    now_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    machine_summarys = await MachineTestSummary.filter(record_purchase_code__in=po_list, record_created_time__lte=now_time).all()
     for item in machine_summarys:
         if item.record_shelf_sn not in machine_list:
             machine_list.append(item.record_shelf_sn)
 
     pcba_list = []
-    pcba_summarys = await PCBATestSummary.filter(record_purchase_code__in=po_list).all()
+    pcba_summarys = await PCBATestSummary.filter(record_purchase_code__in=po_list, record_created_time__lte=now_time).all()
     for item in pcba_summarys:
         if item.record_sn not in pcba_list:
             pcba_list.append(item.record_sn)
