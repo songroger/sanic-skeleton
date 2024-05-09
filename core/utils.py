@@ -231,7 +231,7 @@ class DashBoard:
     @classmethod
     async def _getPCBAContentData(cls):
         """
-        获取整机Content数据
+        获取pcba感应板Content数据
         """
         logger.info("开始统计了")
         now_time = datetime.datetime.now()
@@ -277,7 +277,7 @@ class DashBoard:
                     cur_hour_total += 1
 
                 # 未完成测试就删除的，认为是NG
-                if record_deleted == 1 and record_result != 2:
+                if record_result != 1:
                     if record_shelf_sn not in shelf_sn_fail_removel:
                         cur_hour_fail += 1
                         shelf_sn_fail_removel.append(record_shelf_sn)
