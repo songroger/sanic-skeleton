@@ -1,7 +1,6 @@
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 # 定时任务
 import datetime
-
 from core.utils import DashBoard
 
 scheduler = AsyncIOScheduler()
@@ -24,7 +23,7 @@ async def DashBoardTast():
                     ["已生产数", finish, 0],
                     ["剩余", total - finish, 0],
                     ["", progress, 1]]
-        result = formatDashboardItem(location='head', title=k, infos=head_data, data=result)
+        result = await DashBoard.formatDashboardItem(location='head', title=k, infos=head_data, data=result)
 
     # pcba数据
     pcba_record = await DashBoard.StatisticsPCBARecord()
@@ -43,7 +42,7 @@ async def DashBoardTast():
             ["不良率", f"{fail_scale}%", 0],
             ["当日不良率", fail_scale, 1],
             ]
-        result = formatDashboardItem(location=location, title=title, group_type=group_type, infos=detail_pcba_data, first_pass_list=fail_scale_list, product_list=product_list, data=result)
+        result = await DashBoard.formatDashboardItem(location=location, title=title, group_type=group_type, infos=detail_pcba_data, first_pass_list=fail_scale_list, product_list=product_list, data=result)
 
     # 整机数据
     machine_record = await DashBoard.StatisticsMachineRecord()
@@ -62,7 +61,7 @@ async def DashBoardTast():
             ["不良率", f"{fail_scale}%", 0],
             ["当日不良率", fail_scale, 1],
             ]
-        result = formatDashboardItem(location=location, title=title, group_type=group_type, infos=detail_pcba_data, first_pass_list=fail_scale_list, product_list=product_list, data=result)
+        result = await DashBoard.formatDashboardItem(location=location, title=title, group_type=group_type, infos=detail_pcba_data, first_pass_list=fail_scale_list, product_list=product_list, data=result)
 
 
 def scheduler_start():

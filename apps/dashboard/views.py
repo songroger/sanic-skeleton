@@ -8,55 +8,6 @@ from core.utils import DashBoard, getCurrentMonthPurchaseInfo
 dashboard_bp = Blueprint('dashboard', url_prefix='/dashboard')
 
 
-def formatDashboardItem(location: str, title: str, infos: List[dict], group_type: str = None, first_pass_list: List[int] = None, product_list: List[int] = None, data: dict = None,):
-    """
-    看板单元数据格式化
-    :param location: head|content
-    :param group_type: 控制箱|感应板|整机
-    """
-    if data is None:
-        data = {}
-    if location not in data:
-        data[location] = []
-    
-    group_temp = {}
-    idx = -1
-    if group_type:
-        for i, item in enumerate(data[location]):
-            if item.get("group") == group_type:
-                idx = i
-                break
-        if idx == -1:
-            group_temp = {"group": group_type, "group_details": []}
-        else:
-            group_temp = data[location][idx]
-    temp = {"title": title, "details": []}
-    for i in infos:
-        temp['details'].append({
-            "name": i[0],
-            "value": i[1],
-            "type": i[2]
-        })
-        if first_pass_list:
-            temp['first_pass_list'] = first_pass_list
-        if product_list:
-            temp['product_list'] = product_list
-
-
-    if group_temp:
-        group_temp['group_details'].append(temp)
-
-    else:
-        group_temp = temp
-
-    if idx != -1:
-        data[location][idx] = group_temp
-    else:
-        data[location].append(group_temp)
-
-    return data
-
-
 class DashboardPage(HTTPMethodView):
     """
     主看板
@@ -77,7 +28,7 @@ class DashboardPage(HTTPMethodView):
                        ["已生产数", finish, 0],
                        ["剩余", total - finish, 0],
                        ["", progress, 1]]
-            result = formatDashboardItem(location='head', title=k, infos=head_data, data=result)
+            result = await DashBoard.formatDashboardItem(location='head', title=k, infos=head_data, data=result)
 
         # pcba数据
         pcba_record = await DashBoard.StatisticsPCBARecord()
@@ -96,7 +47,7 @@ class DashboardPage(HTTPMethodView):
                 ["不良率", f"{fail_scale}%", 0],
                 ["当日不良率", fail_scale, 1],
                 ]
-            result = formatDashboardItem(location=location, title=title, group_type=group_type, infos=detail_pcba_data, first_pass_list=fail_scale_list, product_list=product_list, data=result)
+            result = await DashBoard.formatDashboardItem(location=location, title=title, group_type=group_type, infos=detail_pcba_data, first_pass_list=fail_scale_list, product_list=product_list, data=result)
 
         # 整机数据
         machine_record = await DashBoard.StatisticsMachineRecord()
@@ -115,7 +66,7 @@ class DashboardPage(HTTPMethodView):
                 ["不良率", f"{fail_scale}%", 0],
                 ["当日不良率", fail_scale, 1],
                 ]
-            result = formatDashboardItem(location=location, title=title, group_type=group_type, infos=detail_pcba_data, first_pass_list=fail_scale_list, product_list=product_list, data=result)
+            result = await DashBoard.formatDashboardItem(location=location, title=title, group_type=group_type, infos=detail_pcba_data, first_pass_list=fail_scale_list, product_list=product_list, data=result)
 
         return baseResponse(ResponseCode.OK, "success", result)
 

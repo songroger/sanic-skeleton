@@ -2,7 +2,7 @@ import datetime
 from decimal import Decimal
 import json
 import os
-from typing import Union
+from typing import List, Union
 from apps.database.models import MachineTestSummary, PCBATestSummary
 from apps.manufacture.models import Supplier, PoList, Material
 from settings import program_root_path
@@ -131,7 +131,7 @@ class DashBoard:
     }
 
     @classmethod
-    async def _getWholeMachineContentData(cls):
+    async def _getWholeMachineContentData(cls, supplier_id_list: List[str]):
         """
         获取整机Content数据
         """
@@ -142,6 +142,8 @@ class DashBoard:
         
         # 按供应商统计
         result = {}
+        for item in supplier_id_list:
+            result[item] = {}
 
         # sn去重
         shelf_sn_duplicate_removal = []
@@ -149,9 +151,12 @@ class DashBoard:
         shelf_sn_fail_removel = []
 
         # 查询整机测试结果数据，限制测试时间,
-        summarys = await MachineTestSummary.filter(record_created_time__range=(start_time, end_time)).order_by("id").all()
+        query = MachineTestSummary.filter(record_created_time__range=(start_time, end_time))
+        if supplier_id_list:
+            query = query.filter(record_customer_code__in=supplier_id_list)
+        summarys = await query.order_by("id").all()
         # summarys = await MachineTestSummary.all()
-        logger.info(f">>:{summarys}")
+        # logger.info(f">>:{summarys}")
         if summarys:
             for item in summarys:
                 record_customer_code = item.record_customer_code
@@ -189,7 +194,16 @@ class DashBoard:
     
     @classmethod
     async def StatisticsMachineRecord(cls):
-        data = await cls._getWholeMachineContentData()
+        """
+        整机当日详情数据统计
+        """
+        # TODO 临时写死，后续从供应商数据库配置中获取
+        supplier_id_list = []
+        file_path = "data/supplier_config.json"
+        flag, data, msg = loadJsonConf(file_path=file_path)
+        if flag:
+            supplier_id_list = data.get("machine_supplier", [])
+        data = await cls._getWholeMachineContentData(supplier_id_list=supplier_id_list)
         result = {}
         for vendor, infos in data.items():
             # 检查供应商配置信息
@@ -201,7 +215,7 @@ class DashBoard:
             fail_scale_list = product_list.copy()
             infos = dict(sorted(infos.items()))
             for hour, info in infos.items():
-                print(vendor, hour, info)
+                # print(vendor, hour, info)
                 if hour in cls.DetailIdxMap:
                     idx = cls.DetailIdxMap[hour]
                     product_list[idx] = info['total']
@@ -229,7 +243,7 @@ class DashBoard:
         return result
     
     @classmethod
-    async def _getPCBAContentData(cls):
+    async def _getPCBAContentData(cls, supplier_id_list: List[str]):
         """
         获取pcba感应板Content数据
         """
@@ -240,6 +254,8 @@ class DashBoard:
         
         # 按供应商统计
         result = {}
+        for item in supplier_id_list:
+            result[item] = {}
 
         # sn去重
         shelf_sn_duplicate_removal = []
@@ -247,9 +263,12 @@ class DashBoard:
         shelf_sn_fail_removel = []
 
         # 查询整机测试结果数据，限制测试时间,
-        summarys = await PCBATestSummary.filter(record_created_time__range=(start_time, end_time)).order_by("id").all()
-        # summarys = await MachineTestSummary.all()
-        logger.info(f">>:{summarys}")
+        query = PCBATestSummary.filter(record_created_time__range=(start_time, end_time))
+        
+        if supplier_id_list:
+            query = query.filter(record_customer_code__in=supplier_id_list)
+        summarys = await query.order_by("id").all()
+        # logger.info(f">>:{summarys}")
         if summarys:
             for item in summarys:
                 record_customer_code = item.record_customer_code
@@ -288,7 +307,16 @@ class DashBoard:
 
     @classmethod
     async def StatisticsPCBARecord(cls):
-        data = await cls._getPCBAContentData()
+        """
+        PCBA当日统计
+        """
+        # TODO 临时写死，后续从供应商数据库配置中获取
+        supplier_id_list = []
+        file_path = "data/supplier_config.json"
+        flag, data, msg = loadJsonConf(file_path=file_path)
+        if flag:
+            supplier_id_list = data.get("pcba_supplier", [])
+        data = await cls._getPCBAContentData(supplier_id_list=supplier_id_list)
         result = {}
         for vendor, infos in data.items():
             # 检查供应商配置信息
@@ -301,7 +329,7 @@ class DashBoard:
             fail_scale_list = product_list.copy()
             infos = dict(sorted(infos.items()))
             for hour, info in infos.items():
-                print(vendor, hour, info)
+                # print(vendor, hour, info)
                 if hour in cls.DetailIdxMap:
                     idx = cls.DetailIdxMap[hour]
                     product_list[idx] = info['total']
@@ -331,6 +359,9 @@ class DashBoard:
     
     @classmethod
     async def StatisticsHeadData(cls):
+        """
+        头部当月统计汇总
+        """
         cur_month = datetime.date.today().strftime("%Y-%m")
         # 统计采购单总需求
         data1 = await getCurrentMonthPurchaseInfo(cur_month)
@@ -340,4 +371,54 @@ class DashBoard:
         for k, v in data1.items():
             result[k] = [v, data2[k]]
         return result
+
+    @classmethod
+    async def formatDashboardItem(cls, location: str, title: str, infos: List[dict], group_type: str = None, first_pass_list: List[int] = None, 
+                                  product_list: List[int] = None, data: dict = None,):
+        """
+        看板单元数据格式化
+        :param location: head|content
+        :param group_type: 控制箱|感应板|整机
+        """
+        if data is None:
+            data = {}
+        if location not in data:
+            data[location] = []
+        
+        group_temp = {}
+        idx = -1
+        if group_type:
+            for i, item in enumerate(data[location]):
+                if item.get("group") == group_type:
+                    idx = i
+                    break
+            if idx == -1:
+                group_temp = {"group": group_type, "group_details": []}
+            else:
+                group_temp = data[location][idx]
+        temp = {"title": title, "details": []}
+        for i in infos:
+            temp['details'].append({
+                "name": i[0],
+                "value": i[1],
+                "type": i[2]
+            })
+            if first_pass_list:
+                temp['first_pass_list'] = first_pass_list
+            if product_list:
+                temp['product_list'] = product_list
+
+        if group_temp:
+            group_temp['group_details'].append(temp)
+
+        else:
+            group_temp = temp
+
+        if idx != -1:
+            data[location][idx] = group_temp
+        else:
+            data[location].append(group_temp)
+
+        return data
+
 

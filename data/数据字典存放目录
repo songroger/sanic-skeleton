@@ -1,2 +1,6 @@
-mate_model_list.json存放成品半成品等型号配置信息
-mate_model_group.json存放不同分组的型号信息
+数据字典介绍:
+    - 目前配置的数据,为模拟测试数据,根据实际需求变更
+
+1. mate_model_list.json存放成品半成品等型号配置信息
+2. mate_model_group.json存放不同分组的型号信息
+3. supplier_config.json: 看板供应商展示配置,用于指定看板展示的供应商信息
