@@ -1,3 +1,4 @@
+import re
 import xlrd
 import datetime
 from core.logger import logger
@@ -302,7 +303,6 @@ class DeliveryOrderOperation:
                     history_cache[item2.part_num] = item2.qty
         return history_cache
         
-
     @classmethod
     async def getOrderInfo(cls, payload):
         """获取出货单信息"""
@@ -316,6 +316,43 @@ class DeliveryOrderOperation:
             query = query.filter(customer_name=customer_name)
         order_info = await query.prefetch_related("details").first()
         return order_info
+    
+    @classmethod
+    async def checkHistoryByShelfSN(cls, shelf_sn: str):
+        """
+        查询SN是否有出货记录
+        """
+        data = await DeliveryOrderDetail.filter(shelf_sn=shelf_sn).first()
+        return data is not None
+
+
+def parseShelfTag(tag_str: str):
+    """解析货架标签数据"""
+    data = {
+        "result": 0,
+        "msg": ""
+    }
+
+    if '&' not in tag_str:
+        data.update(msg="标签格式错误,未找到分隔符!")
+        return data
+    tag_list = tag_str.split("&")
+    shelf_id = tag_list[0]
+    part_num = tag_list[1]
+
+    group = re.match(r"^(SN)?\w{3}-\w{3}-\w{3}$", shelf_id)
+    if not group:
+        data.update(msg="SN序列号格式错误!")
+        return data
+
+    group = re.match(r"^\w{3}-\w{3}-\w{3}$", part_num)
+    if not group:
+        data.update(msg="料号格式错误!")
+        return data
+    if not shelf_id.startswith("SN"):
+        shelf_id = f"SN{shelf_id}"
+    data.update(result=1, shelf_sn=shelf_id, part_num=part_num)
+    return data
 
 
 async def checkDiffSalesAndDelivery(sales_order_code, delivery_detail):

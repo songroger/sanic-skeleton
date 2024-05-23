@@ -1,5 +1,5 @@
 from sanic import Blueprint
-from .utils import SalesOrderOperation, MaterialOperation, ComponyOperation
+from .utils import SalesOrderOperation, MaterialOperation, ComponyOperation, parseShelfTag, DeliveryOrderOperation
 from core.base import baseResponse, ResponseCode, SalesOrderStateEnum, MateTypeEnum, PurchaseTypeEnum
 
 business_bp = Blueprint('business', url_prefix='/business')
@@ -71,6 +71,28 @@ async def checkShelfSNValid(request):
     shelf_sn = payload.get("shelf_sn")
     return baseResponse(ResponseCode.OK, "success")
 
+
+@business_bp.route("/parseShelfTagInfo", methods=['POST'])
+async def parseShelfTagInfo(request):
+    """
+    解析铭牌,校验SN是否可以出货
+    """
+    payload = request.json
+    shelf_tag = payload.get("shelf_tag")
+    data = parseShelfTag(shelf_tag)
+    if data['result'] == 0:
+        msg = data['msg']
+        res = ResponseCode.FAIL
+    else:
+        sn = data.get("shelf_sn")
+        isDelivery = await DeliveryOrderOperation.checkHistoryByShelfSN(shelf_sn=sn)
+        if isDelivery:
+            msg = "该设备已出货!"
+            res = ResponseCode.FAIL
+        else:
+            msg = "success"
+            res = ResponseCode.OK
+    return baseResponse(res, msg=msg, data=data)
 
 
 
