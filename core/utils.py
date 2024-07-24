@@ -102,8 +102,16 @@ async def getFinishedPurchaseInfo(month):
     for item in pcba_summarys:
         if item.record_sn not in pcba_list:
             pcba_list.append(item.record_sn)
+    # TODO 控制箱未对接,临时使用文件动态调整数据
+    try:
+        with open("data/control_box_count.txt", "r")as f:
+            box_count = f.read().strip()
+        if box_count.isdigit():
+            box_count = int(box_count)
+    except:
+        box_count = 0
     data = {
-        "控制箱": 0,
+        "控制箱": box_count,
         "感应板": len(pcba_list),
         "整机": len(machine_list)
     }
