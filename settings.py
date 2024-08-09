@@ -15,6 +15,7 @@ class Settings(object):
             data = json.load(f)
         self.Data = data
         self.SECRET_KEY = "www.swissmic.cn/factory_cloud"
+        self.EXPIRATION_DELTA = 3600 * 12
         self.AUTH_LOGIN_ENDPOINT = 'auth.login'
         self.AUTH_LOGIN_URL = "/"
         self.log_file_path = os.path.join(program_root_path, 'logs')

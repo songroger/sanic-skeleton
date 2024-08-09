@@ -3,7 +3,7 @@
 import argparse
 
 from core.logger import logger
-from apps.auth.views import auth_bp
+from apps.auth.views import auth_bp, SisUserManager
 from apps.manufacture.business_views import business_bp 
 from apps.database.views import database_bp 
 from tortoise.contrib.sanic import register_tortoise
@@ -53,6 +53,7 @@ app.add_route(OrderCode.as_view(), '/api/order_code')
 app.add_route(DeliveryManage.as_view(), '/api/delivery')
 app.add_route(DeliveryDetailManage.as_view(), '/api/delivery_detail')
 
+app.add_route(SisUserManager.as_view(), '/api/sis_user')
 
 # Regist middleware & handler
 app.register_middleware(check_content_negotiation, "request")

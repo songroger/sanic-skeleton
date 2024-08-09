@@ -1,4 +1,5 @@
 import datetime
+import hashlib
 from decimal import Decimal
 import json
 import os
@@ -7,6 +8,8 @@ from apps.database.models import MachineTestSummary, PCBATestSummary
 from apps.manufacture.models import Supplier, PoList, Material
 from settings import program_root_path
 from .logger import logger
+from itsdangerous import TimedJSONWebSignatureSerializer
+from settings import settings
 
 
 def loadJsonConf(file_path):
@@ -430,3 +433,20 @@ class DashBoard:
         return data
 
 
+def generate_token(info, secret_key=settings.SECRET_KEY, expires_time=settings.EXPIRATION_DELTA):
+    t = TimedJSONWebSignatureSerializer(secret_key=secret_key, expires_in=expires_time)
+    token = t.dumps(info).decode()
+    return token
+
+
+def parse_token(token, secret_key=settings.SECRET_KEY):
+    t = TimedJSONWebSignatureSerializer(secret_key)
+    res = t.loads(token)
+    return res
+
+
+def encrypt_msg(msg):
+    md = hashlib.md5()
+    md.update(msg.encode(encoding='utf-8'))
+    msg = md.hexdigest()
+    return msg

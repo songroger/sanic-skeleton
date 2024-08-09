@@ -1,1 +1,2 @@
-from .models import FactoryParm, FactoryUser, ShelfDeviceConfig
+from .models import FactoryParm, FactoryUser, ShelfDeviceConfig, \
+    SisUser, SisUserGroup
